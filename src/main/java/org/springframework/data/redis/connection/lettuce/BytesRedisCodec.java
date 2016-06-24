@@ -18,6 +18,7 @@ package org.springframework.data.redis.connection.lettuce;
 
 import java.nio.ByteBuffer;
 
+import com.lambdaworks.redis.codec.ByteArrayCodec;
 import com.lambdaworks.redis.codec.RedisCodec;
 
 /**
@@ -25,31 +26,23 @@ import com.lambdaworks.redis.codec.RedisCodec;
  * 
  * @author Costin Leau
  */
-class BytesRedisCodec extends RedisCodec<byte[], byte[]> {
+class BytesRedisCodec implements RedisCodec<byte[], byte[]> {
 
-	@Override
+	ByteArrayCodec delegate = new ByteArrayCodec();
+
 	public byte[] decodeKey(ByteBuffer bytes) {
-		return getBytes(bytes);
+		return delegate.decodeKey(bytes);
 	}
 
-	@Override
 	public byte[] decodeValue(ByteBuffer bytes) {
-		return getBytes(bytes);
+		return delegate.decodeValue(bytes);
 	}
 
-	@Override
-	public byte[] encodeKey(byte[] key) {
-		return key;
+	public ByteBuffer encodeKey(byte[] key) {
+		return delegate.encodeKey(key);
 	}
 
-	@Override
-	public byte[] encodeValue(byte[] value) {
-		return value;
-	}
-
-	private static byte[] getBytes(ByteBuffer buffer) {
-		byte[] b = new byte[buffer.remaining()];
-		buffer.get(b);
-		return b;
+	public ByteBuffer encodeValue(byte[] value) {
+		return delegate.encodeValue(value);
 	}
 }

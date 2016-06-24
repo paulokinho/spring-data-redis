@@ -37,9 +37,9 @@ import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import com.lambdaworks.redis.RedisURI;
+import com.lambdaworks.redis.SetArgs;
 import com.lambdaworks.redis.cluster.models.partitions.Partitions;
 import com.lambdaworks.redis.cluster.models.partitions.RedisClusterNode.NodeFlag;
-import com.lambdaworks.redis.protocol.SetArgs;
 
 /**
  * @author Christoph Strobl
@@ -53,7 +53,8 @@ public class LettuceConvertersUnitTests {
 	 */
 	@Test
 	public void convertingEmptyStringToListOfRedisClientInfoShouldReturnEmptyList() {
-		assertThat(LettuceConverters.toListOfRedisClientInformation(""), equalTo(Collections.<RedisClientInfo> emptyList()));
+		assertThat(LettuceConverters.toListOfRedisClientInformation(""),
+				equalTo(Collections.<RedisClientInfo> emptyList()));
 	}
 
 	/**

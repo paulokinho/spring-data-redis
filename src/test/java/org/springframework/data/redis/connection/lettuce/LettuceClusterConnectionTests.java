@@ -2088,6 +2088,7 @@ public class LettuceClusterConnectionTests implements ClusterConnectionTests {
 	 * @see DATAREDIS-315
 	 */
 	@Test
+	@Ignore("DATAREDIS-525")
 	public void selectShouldAllowSelectionOfDBIndexZero() {
 		clusterConnection.select(0);
 	}

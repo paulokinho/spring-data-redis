@@ -73,11 +73,11 @@ import com.lambdaworks.redis.KeyValue;
 import com.lambdaworks.redis.RedisURI;
 import com.lambdaworks.redis.ScoredValue;
 import com.lambdaworks.redis.ScriptOutputType;
+import com.lambdaworks.redis.SetArgs;
 import com.lambdaworks.redis.SortArgs;
 import com.lambdaworks.redis.cluster.models.partitions.Partitions;
 import com.lambdaworks.redis.cluster.models.partitions.RedisClusterNode.NodeFlag;
 import com.lambdaworks.redis.protocol.LettuceCharsets;
-import com.lambdaworks.redis.protocol.SetArgs;
 
 /**
  * Lettuce type converters

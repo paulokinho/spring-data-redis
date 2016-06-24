@@ -219,7 +219,7 @@ public class RedisCacheTest extends AbstractNativeCacheTest<RedisTemplate> {
 		cache.put(key, value);
 
 		RedisCache redisCache = (RedisCache) cache;
-		assertThat(redisCache.get(key, value.getClass()), instanceOf(value.getClass()));
+		assertThat((Object) redisCache.get(key, value.getClass()), instanceOf(value.getClass()));
 	}
 
 	/**

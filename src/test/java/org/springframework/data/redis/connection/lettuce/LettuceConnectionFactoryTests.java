@@ -116,6 +116,7 @@ public class LettuceConnectionFactoryTests {
 	}
 
 	@Test
+	@Ignore("DATAREDIS-525")
 	public void testValidateNoError() {
 		factory.setValidateConnection(true);
 		RedisConnection conn2 = factory.getConnection();
