@@ -204,6 +204,15 @@ public class LettuceConnectionFactory implements InitializingBean, DisposableBea
 		return new LettuceClusterConnection((RedisClusterClient) client, clusterCommandExecutor);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.RedisConnectionFactory#getReactiveConnection()
+	 */
+	@Override
+	public LettuceReactiveRedisConnection getReactiveConnection() {
+		return new LettuceReactiveRedisConnection(client);
+	}
+
 	public void initConnection() {
 
 		synchronized (this.connectionMonitor) {

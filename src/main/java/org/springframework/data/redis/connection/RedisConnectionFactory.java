@@ -37,10 +37,15 @@ public interface RedisConnectionFactory extends PersistenceExceptionTranslator {
 	 * Provides a suitable connection for interacting with Redis Cluster.
 	 * 
 	 * @return
-	 * @throws
 	 * @since 1.7
 	 */
 	RedisClusterConnection getClusterConnection();
+
+	/**
+	 * @return
+	 * @since 2.0.
+	 */
+	ReactiveRedisConnection getReactiveConnection();
 
 	/**
 	 * Specifies if pipelined results should be converted to the expected data type. If false, results of

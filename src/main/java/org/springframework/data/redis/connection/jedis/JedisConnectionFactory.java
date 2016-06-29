@@ -34,6 +34,7 @@ import org.springframework.data.redis.ExceptionTranslationStrategy;
 import org.springframework.data.redis.PassThroughExceptionTranslationStrategy;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.connection.ClusterCommandExecutor;
+import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisClusterConnection;
 import org.springframework.data.redis.connection.RedisConnection;
@@ -358,6 +359,15 @@ public class JedisConnectionFactory implements InitializingBean, DisposableBean,
 			throw new InvalidDataAccessApiUsageException("Cluster is not configured!");
 		}
 		return new JedisClusterConnection(cluster, clusterCommandExecutor);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.RedisConnectionFactory#getReactiveConnection()
+	 */
+	@Override
+	public ReactiveRedisConnection getReactiveConnection() {
+		throw new UnsupportedOperationException("Jedis does not support racative connections");
 	}
 
 	/*
