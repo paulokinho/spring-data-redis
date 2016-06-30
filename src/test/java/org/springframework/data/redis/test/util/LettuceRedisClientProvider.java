@@ -25,7 +25,7 @@ import com.lambdaworks.redis.RedisURI;
  */
 public class LettuceRedisClientProvider extends ExternalResource {
 
-	String host = "localhost";
+	String host = "127.0.0.1";
 	int port = 6379;
 
 	RedisClient client;

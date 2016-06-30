@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
@@ -55,6 +56,30 @@ public interface ReactiveRedisConnection extends Closeable {
 	 * @since 2.0
 	 */
 	static interface ReactiveStringCommands {
+
+		/**
+		 * Set {@literal value} for {@literal key} and return the existing value.
+		 * 
+		 * @param key must not be {@literal null}.
+		 * @param value must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Optional<ByteBuffer>> getSet(ByteBuffer key, ByteBuffer value) {
+
+			Assert.notNull(key, "Key must not be null!");
+			Assert.notNull(value, "Value must not be null!");
+
+			return getSet(Mono.fromSupplier(() -> new KeyValue(key, value))).next();
+		}
+
+		/**
+		 * Set {@literal value} for {@literal key} and return the existing value one by one.
+		 * 
+		 * @param key must not be {@literal null}.
+		 * @param value must not be {@literal null}.
+		 * @return
+		 */
+		Flux<Optional<ByteBuffer>> getSet(Publisher<KeyValue> values);
 
 		/**
 		 * Set {@literal value} for {@literal key}.

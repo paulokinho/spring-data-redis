@@ -18,12 +18,14 @@ package org.springframework.data.redis.connection.lettuce;
 import static org.hamcrest.collection.IsIterableContainingInOrder.*;
 import static org.hamcrest.core.Is.*;
 import static org.hamcrest.core.IsEqual.*;
+import static org.hamcrest.core.IsNull.*;
 import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.Test;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands.KeyValue;
@@ -36,6 +38,53 @@ import reactor.core.test.TestSubscriber;
  * @author Christoph Strobl
  */
 public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsTestsBase {
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void getSetShouldReturnPreviousValueCorrectly() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+
+		Mono<Optional<ByteBuffer>> result = connection.stringCommands().getSet(KEY_1_BBUFFER, VALUE_2_BBUFFER);
+
+		assertThat(result.block().get(), is(equalTo(VALUE_1_BBUFFER)));
+		assertThat(nativeCommands.get(KEY_1), is(equalTo(VALUE_2)));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void getSetShouldReturnPreviousValueCorrectlyWhenNoExists() {
+
+		Mono<Optional<ByteBuffer>> result = connection.stringCommands().getSet(KEY_1_BBUFFER, VALUE_2_BBUFFER);
+
+		Optional<ByteBuffer> value = result.block();
+		assertThat(value, is(notNullValue()));
+		assertThat(value.isPresent(), is(false));
+		assertThat(nativeCommands.get(KEY_1), is(equalTo(VALUE_2)));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void getSetShouldReturnPreviousValuesCorrectly() {
+
+		Flux<Optional<ByteBuffer>> result = connection.stringCommands().getSet(Flux.fromIterable(
+				Arrays.asList(new KeyValue(KEY_1_BBUFFER, VALUE_1_BBUFFER), new KeyValue(KEY_1_BBUFFER, VALUE_2_BBUFFER))));
+
+		TestSubscriber<Optional<ByteBuffer>> subscriber = TestSubscriber.create();
+		result.subscribe(subscriber);
+		subscriber.await();
+
+		subscriber.assertValueCount(2);
+		subscriber.assertValues(Optional.<ByteBuffer> empty(), Optional.<ByteBuffer> of(VALUE_1_BBUFFER));
+
+		assertThat(nativeCommands.get(KEY_1), is(equalTo(VALUE_2)));
+	}
 
 	/**
 	 * @see DATAREDIS-525

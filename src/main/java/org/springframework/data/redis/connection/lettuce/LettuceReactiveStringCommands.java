@@ -18,6 +18,7 @@ package org.springframework.data.redis.connection.lettuce;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,24 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 
 		Assert.notNull(connection, "Connection must not be null!");
 		this.connection = connection;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#getSet(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<Optional<ByteBuffer>> getSet(Publisher<KeyValue> values) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(values).flatMap(kv -> {
+
+				return LettuceReactiveRedisConnection.<Optional<ByteBuffer>> monoConverter()
+						.convert(cmd.getset(kv.keyAsBytes(), kv.valueAsBytes()).map(ByteBuffer::wrap).map(Optional::of)
+								.defaultIfEmpty(Optional.empty()));
+			});
+		});
 	}
 
 	/*
