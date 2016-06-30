@@ -69,10 +69,8 @@ public class LettuceReactiveKeyCommands implements ReactiveRedisConnection.React
 
 			return Flux.from(keys).flatMap(key -> {
 
-				return LettuceReactiveRedisConnection.<Long> monoConverter()
-						.convert(cmd
-								.del(key.stream().map(ByteBuffer::array).collect(Collectors.toList()).toArray(new byte[key.size()][]))
-								.toList());
+				return LettuceReactiveRedisConnection.<Long> monoConverter().convert(
+						cmd.del(key.stream().map(ByteBuffer::array).collect(Collectors.toList()).toArray(new byte[key.size()][])));
 			});
 		});
 	}
