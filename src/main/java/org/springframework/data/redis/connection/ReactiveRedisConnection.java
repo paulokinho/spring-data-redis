@@ -17,7 +17,6 @@ package org.springframework.data.redis.connection;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -30,6 +29,7 @@ import org.springframework.util.Assert;
 import lombok.Data;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.tuple.Tuple2;
 
 /**
  * @author Christoph Strobl
@@ -69,7 +69,7 @@ public interface ReactiveRedisConnection extends Closeable {
 			Assert.notNull(key, "Key must not be null!");
 			Assert.notNull(value, "Value must not be null!");
 
-			return getSet(Mono.fromSupplier(() -> new KeyValue(key, value))).next();
+			return getSet(Mono.fromSupplier(() -> new KeyValue(key, value))).next().map(Tuple2::getT2);
 		}
 
 		/**
@@ -77,9 +77,10 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * 
 		 * @param key must not be {@literal null}.
 		 * @param value must not be {@literal null}.
-		 * @return
+		 * @return {@link Flux} of {@link Tuple2} holding the {@link KeyValue} pair to set along with the previously
+		 *         existing value.
 		 */
-		Flux<Optional<ByteBuffer>> getSet(Publisher<KeyValue> values);
+		Flux<Tuple2<KeyValue, Optional<ByteBuffer>>> getSet(Publisher<KeyValue> values);
 
 		/**
 		 * Set {@literal value} for {@literal key}.
@@ -93,16 +94,16 @@ public interface ReactiveRedisConnection extends Closeable {
 			Assert.notNull(key, "Key must not be null!");
 			Assert.notNull(value, "Value must not be null!");
 
-			return set(Mono.fromSupplier(() -> new KeyValue(key, value))).next();
+			return set(Mono.fromSupplier(() -> new KeyValue(key, value))).next().map(Tuple2::getT2);
 		}
 
 		/**
 		 * Set each and every {@link KeyValue} item separately.
 		 * 
 		 * @param values must not be {@literal null}.
-		 * @return never {@literal null}.
+		 * @return {@link Flux} of {@link Tuple2} holding the {@link KeyValue} pair to set along with the command result.
 		 */
-		Flux<Boolean> set(Publisher<KeyValue> values);
+		Flux<Tuple2<KeyValue, Boolean>> set(Publisher<KeyValue> values);
 
 		/**
 		 * Set {@literal value} for {@literal key} with {@literal expiration} and {@literal options}.
@@ -120,7 +121,8 @@ public interface ReactiveRedisConnection extends Closeable {
 			Assert.notNull(expiration, "Expiration must not be null!");
 			Assert.notNull(option, "Option must not be null!");
 
-			return set(Mono.fromSupplier(() -> new KeyValue(key, value)), () -> expiration, () -> option).next();
+			return set(Mono.fromSupplier(() -> new KeyValue(key, value)), () -> expiration, () -> option).next()
+					.map(Tuple2::getT2);
 		}
 
 		/**
@@ -129,9 +131,10 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @param values must not be {@literal null}.
 		 * @param expiration must not be {@literal null}.
 		 * @param option must not be {@literal null}.
-		 * @return
+		 * @return {@link Flux} of {@link Tuple2} holding the {@link KeyValue} pair to set along with the command result.
 		 */
-		Flux<Boolean> set(Publisher<KeyValue> values, Supplier<Expiration> expiration, Supplier<SetOption> option);
+		Flux<Tuple2<KeyValue, Boolean>> set(Publisher<KeyValue> values, Supplier<Expiration> expiration,
+				Supplier<SetOption> option);
 
 		/**
 		 * Get single element stored at {@literal key}.
@@ -142,16 +145,16 @@ public interface ReactiveRedisConnection extends Closeable {
 		default Mono<ByteBuffer> get(ByteBuffer key) {
 
 			Assert.notNull(key, "Key must not be null!");
-			return get(Mono.fromSupplier(() -> key)).next();
+			return get(Mono.fromSupplier(() -> key)).next().map(Tuple2::getT2);
 		}
 
 		/**
 		 * Get elements one by one.
 		 * 
 		 * @param keys must not be {@literal null}.
-		 * @return
+		 * @return {@link Flux} of {@link Tuple2} holding the {@literal key} to get along with the value retrieved.
 		 */
-		Flux<ByteBuffer> get(Publisher<ByteBuffer> keys);
+		Flux<Tuple2<ByteBuffer, ByteBuffer>> get(Publisher<ByteBuffer> keys);
 
 		/**
 		 * Get multiple values in one batch.
@@ -162,16 +165,17 @@ public interface ReactiveRedisConnection extends Closeable {
 		default Mono<List<ByteBuffer>> mGet(List<ByteBuffer> keys) {
 
 			Assert.notNull(keys, "Keys must not be null!");
-			return mGet(Mono.fromSupplier(() -> keys)).next();
+			return mGet(Mono.fromSupplier(() -> keys)).next().map(Tuple2::getT2);
 		}
 
 		/**
+		 * <br />
 		 * Get multiple values at in batches.
 		 * 
 		 * @param keys must not be {@literal null}.
 		 * @return
 		 */
-		Flux<List<ByteBuffer>> mGet(Publisher<Collection<ByteBuffer>> keysets);
+		Flux<Tuple2<List<ByteBuffer>, List<ByteBuffer>>> mGet(Publisher<List<ByteBuffer>> keysets);
 
 		/**
 		 * @author Christoph Strobl
@@ -208,33 +212,33 @@ public interface ReactiveRedisConnection extends Closeable {
 		default Mono<Long> del(ByteBuffer key) {
 
 			Assert.notNull(key, "Key must not be null!");
-			return del(Mono.fromSupplier(() -> key)).next();
+			return del(Mono.fromSupplier(() -> key)).next().map(Tuple2::getT2);
 		}
 
 		/**
 		 * Delete {@literal keys} one by one.
 		 * 
 		 * @param keys must not be {@literal null}.
-		 * @return
+		 * @return {@link Flux} of {@link Tuple2} holding the {@literal key} removed along with the deletion result.
 		 */
-		Flux<Long> del(Publisher<ByteBuffer> keys);
+		Flux<Tuple2<ByteBuffer, Long>> del(Publisher<ByteBuffer> keys);
 
 		/**
-		 * Delete {@literal keys} one in one batch.
+		 * Delete multiple {@literal keys} one in one batch.
 		 * 
 		 * @param keys must not be {@literal null}.
 		 * @return
 		 */
 		default Mono<Long> mDel(List<ByteBuffer> keys) {
-			return mDel(Mono.fromSupplier(() -> keys)).next();
+			return mDel(Mono.fromSupplier(() -> keys)).next().map(Tuple2::getT2);
 		}
 
 		/**
-		 * Delete {@literal keys} in batches.
+		 * Delete multiple {@literal keys} in batches.
 		 * 
 		 * @param keys must not be {@literal null}.
-		 * @return
+		 * @return {@link Flux} of {@link Tuple2} holding the {@literal keys} removed along with the deletion result.
 		 */
-		Flux<Long> mDel(Publisher<List<ByteBuffer>> keys);
+		Flux<Tuple2<List<ByteBuffer>, Long>> mDel(Publisher<List<ByteBuffer>> keys);
 	}
 }

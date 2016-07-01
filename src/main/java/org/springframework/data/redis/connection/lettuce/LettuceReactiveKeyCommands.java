@@ -24,6 +24,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.util.Assert;
 
 import reactor.core.publisher.Flux;
+import reactor.core.tuple.Tuple2;
 
 /**
  * @author Christoph Strobl
@@ -49,12 +50,13 @@ public class LettuceReactiveKeyCommands implements ReactiveRedisConnection.React
 	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands#del(org.reactivestreams.Publisher)
 	 */
 	@Override
-	public Flux<Long> del(Publisher<ByteBuffer> keys) {
+	public Flux<Tuple2<ByteBuffer, Long>> del(Publisher<ByteBuffer> keys) {
 
 		return connection.execute(cmd -> {
-			return Flux.from(keys).flatMap(key -> {
+
+			return Flux.zip(keys, Flux.from(keys).flatMap(key -> {
 				return LettuceReactiveRedisConnection.<Long> monoConverter().convert(cmd.del(key.array()));
-			});
+			}));
 		});
 	}
 
@@ -63,15 +65,15 @@ public class LettuceReactiveKeyCommands implements ReactiveRedisConnection.React
 	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands#mDel(org.reactivestreams.Publisher)
 	 */
 	@Override
-	public Flux<Long> mDel(Publisher<List<ByteBuffer>> keys) {
+	public Flux<Tuple2<List<ByteBuffer>, Long>> mDel(Publisher<List<ByteBuffer>> keys) {
 
 		return connection.execute(cmd -> {
 
-			return Flux.from(keys).flatMap(key -> {
+			return Flux.zip(keys, Flux.from(keys).flatMap(key -> {
 
 				return LettuceReactiveRedisConnection.<Long> monoConverter().convert(
 						cmd.del(key.stream().map(ByteBuffer::array).collect(Collectors.toList()).toArray(new byte[key.size()][])));
-			});
+			}));
 		});
 	}
 

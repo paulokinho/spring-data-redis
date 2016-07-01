@@ -33,6 +33,8 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.Reactiv
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.test.TestSubscriber;
+import reactor.core.tuple.Tuple;
+import reactor.core.tuple.Tuple2;
 
 /**
  * @author Christoph Strobl
@@ -73,15 +75,17 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 	@Test
 	public void getSetShouldReturnPreviousValuesCorrectly() {
 
-		Flux<Optional<ByteBuffer>> result = connection.stringCommands().getSet(Flux.fromIterable(
-				Arrays.asList(new KeyValue(KEY_1_BBUFFER, VALUE_1_BBUFFER), new KeyValue(KEY_1_BBUFFER, VALUE_2_BBUFFER))));
+		KeyValue kv12 = new KeyValue(KEY_1_BBUFFER, VALUE_2_BBUFFER);
+		Flux<Tuple2<KeyValue, Optional<ByteBuffer>>> result = connection.stringCommands()
+				.getSet(Flux.fromIterable(Arrays.asList(KV_1, kv12)));
 
-		TestSubscriber<Optional<ByteBuffer>> subscriber = TestSubscriber.create();
+		TestSubscriber<Tuple2<KeyValue, Optional<ByteBuffer>>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);
 		subscriber.await();
 
 		subscriber.assertValueCount(2);
-		subscriber.assertValues(Optional.<ByteBuffer> empty(), Optional.<ByteBuffer> of(VALUE_1_BBUFFER));
+		subscriber.assertValues(Tuple.of(KV_1, Optional.<ByteBuffer> empty()),
+				Tuple.of(kv12, Optional.<ByteBuffer> of(VALUE_1_BBUFFER)));
 
 		assertThat(nativeCommands.get(KEY_1), is(equalTo(VALUE_2)));
 	}
@@ -104,10 +108,10 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 	@Test
 	public void setShouldAddValuesCorrectly() {
 
-		Flux<Boolean> result = connection.stringCommands().set(Flux.fromIterable(
-				Arrays.asList(new KeyValue(KEY_1_BBUFFER, VALUE_1_BBUFFER), new KeyValue(KEY_2_BBUFFER, VALUE_2_BBUFFER))));
+		Flux<Tuple2<KeyValue, Boolean>> result = connection.stringCommands()
+				.set(Flux.fromIterable(Arrays.asList(KV_1, KV_2)));
 
-		TestSubscriber<Boolean> subscriber = TestSubscriber.create();
+		TestSubscriber<Tuple2<KeyValue, Boolean>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);
 		subscriber.await();
 
@@ -137,15 +141,16 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		nativeCommands.set(KEY_1, VALUE_1);
 		nativeCommands.set(KEY_2, VALUE_2);
 
-		Flux<ByteBuffer> result = connection.stringCommands()
+		Flux<Tuple2<ByteBuffer, ByteBuffer>> result = connection.stringCommands()
 				.get(Flux.fromIterable(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER)));
 
-		TestSubscriber<ByteBuffer> subscriber = TestSubscriber.create();
+		TestSubscriber<Tuple2<ByteBuffer, ByteBuffer>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);
 		subscriber.await();
 
 		subscriber.assertValueCount(2);
-		subscriber.assertContainValues(new HashSet<>(Arrays.asList(VALUE_1_BBUFFER, VALUE_2_BBUFFER)));
+		subscriber.assertContainValues(new HashSet<>(
+				Arrays.asList(Tuple.of(KEY_1_BBUFFER, VALUE_1_BBUFFER), Tuple.of(KEY_2_BBUFFER, VALUE_2_BBUFFER))));
 	}
 
 	/**
@@ -170,8 +175,10 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		nativeCommands.set(KEY_1, VALUE_1);
 		nativeCommands.set(KEY_2, VALUE_2);
 
-		Flux<List<ByteBuffer>> result = connection.stringCommands().mGet(
-				Flux.fromIterable(Arrays.asList(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), Arrays.asList(KEY_2_BBUFFER))));
+		Flux<List<ByteBuffer>> result = connection.stringCommands()
+				.mGet(
+						Flux.fromIterable(Arrays.asList(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), Arrays.asList(KEY_2_BBUFFER))))
+				.map(Tuple2::getT2);
 
 		TestSubscriber<List<ByteBuffer>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);

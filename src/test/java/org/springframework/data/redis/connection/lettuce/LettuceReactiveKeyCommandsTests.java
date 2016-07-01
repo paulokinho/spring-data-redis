@@ -18,6 +18,7 @@ package org.springframework.data.redis.connection.lettuce;
 import static org.hamcrest.core.Is.*;
 import static org.junit.Assert.*;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.junit.Test;
@@ -25,6 +26,8 @@ import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.test.TestSubscriber;
+import reactor.core.tuple.Tuple;
+import reactor.core.tuple.Tuple2;
 
 /**
  * @author Christoph Strobl
@@ -52,14 +55,15 @@ public class LettuceReactiveKeyCommandsTests extends LettuceReactiveCommandsTest
 		nativeCommands.set(KEY_1, VALUE_1);
 		nativeCommands.set(KEY_2, VALUE_2);
 
-		Flux<Long> result = connection.keyCommands().del(Flux.fromIterable(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER)));
+		Flux<Tuple2<ByteBuffer, Long>> result = connection.keyCommands()
+				.del(Flux.fromIterable(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER)));
 
-		TestSubscriber<Long> subscriber = TestSubscriber.create();
+		TestSubscriber<Tuple2<ByteBuffer, Long>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);
 		subscriber.await();
 
 		subscriber.assertValueCount(2);
-		subscriber.assertValues(1L, 1L);
+		subscriber.assertValues(Tuple.of(KEY_1_BBUFFER, 1L), Tuple.of(KEY_2_BBUFFER, 1L));
 	}
 
 	/**
@@ -85,8 +89,10 @@ public class LettuceReactiveKeyCommandsTests extends LettuceReactiveCommandsTest
 		nativeCommands.set(KEY_1, VALUE_1);
 		nativeCommands.set(KEY_2, VALUE_2);
 
-		Flux<Long> result = connection.keyCommands().mDel(
-				Flux.fromIterable(Arrays.asList(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), Arrays.asList(KEY_1_BBUFFER))));
+		Flux<Long> result = connection.keyCommands()
+				.mDel(
+						Flux.fromIterable(Arrays.asList(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), Arrays.asList(KEY_1_BBUFFER))))
+				.map(Tuple2::getT2);
 
 		TestSubscriber<Long> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);

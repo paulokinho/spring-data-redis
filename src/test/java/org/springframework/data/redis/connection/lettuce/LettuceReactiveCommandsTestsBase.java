@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands.KeyValue;
 import org.springframework.data.redis.test.util.LettuceRedisClientProvider;
 
 import com.lambdaworks.redis.RedisClient;
@@ -48,6 +49,9 @@ public class LettuceReactiveCommandsTestsBase {
 
 	static final ByteBuffer KEY_2_BBUFFER = ByteBuffer.wrap(KEY_2_BYTES);
 	static final ByteBuffer VALUE_2_BBUFFER = ByteBuffer.wrap(VALUE_2_BYTES);
+
+	static final KeyValue KV_1 = new KeyValue(KEY_1_BBUFFER, VALUE_1_BBUFFER);
+	static final KeyValue KV_2 = new KeyValue(KEY_2_BBUFFER, VALUE_2_BBUFFER);
 
 	LettuceReactiveRedisConnection connection;
 	RedisCommands<String, String> nativeCommands;
