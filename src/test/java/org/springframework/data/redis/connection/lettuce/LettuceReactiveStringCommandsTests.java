@@ -27,11 +27,10 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.junit.Test;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.ByteBufferResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyValue;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands.GetResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands.GetSetResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands.MGetResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands.SetResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -77,16 +76,17 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 	public void getSetShouldReturnPreviousValuesCorrectly() {
 
 		KeyValue kv12 = new KeyValue(KEY_1_BBUFFER, VALUE_2_BBUFFER);
-		Flux<GetSetResponse> result = connection.stringCommands().getSet(Flux.fromIterable(Arrays.asList(KV_1, kv12)));
+		Flux<ByteBufferResponse<KeyValue>> result = connection.stringCommands()
+				.getSet(Flux.fromIterable(Arrays.asList(KV_1, kv12)));
 
-		TestSubscriber<GetSetResponse> subscriber = TestSubscriber.create();
+		TestSubscriber<ByteBufferResponse<KeyValue>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);
 		subscriber.await();
 
 		subscriber.assertValueCount(2);
 
-		subscriber.assertValues(new GetSetResponse(KV_1, ByteBuffer.allocate(0)),
-				new GetSetResponse(kv12, VALUE_1_BBUFFER));
+		subscriber.assertValues(new ByteBufferResponse<>(KV_1, ByteBuffer.allocate(0)),
+				new ByteBufferResponse<>(kv12, VALUE_1_BBUFFER));
 		assertThat(nativeCommands.get(KEY_1), is(equalTo(VALUE_2)));
 	}
 
@@ -108,9 +108,10 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 	@Test
 	public void setShouldAddValuesCorrectly() {
 
-		Flux<SetResponse> result = connection.stringCommands().set(Flux.fromIterable(Arrays.asList(KV_1, KV_2)));
+		Flux<BooleanResponse<KeyValue>> result = connection.stringCommands()
+				.set(Flux.fromIterable(Arrays.asList(KV_1, KV_2)));
 
-		TestSubscriber<SetResponse> subscriber = TestSubscriber.create();
+		TestSubscriber<BooleanResponse<KeyValue>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);
 		subscriber.await();
 
@@ -150,16 +151,16 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		nativeCommands.set(KEY_1, VALUE_1);
 		nativeCommands.set(KEY_2, VALUE_2);
 
-		Flux<GetResponse> result = connection.stringCommands()
+		Flux<ByteBufferResponse<ByteBuffer>> result = connection.stringCommands()
 				.get(Flux.fromStream(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER).stream()));
 
-		TestSubscriber<GetResponse> subscriber = TestSubscriber.create();
+		TestSubscriber<ByteBufferResponse<ByteBuffer>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);
 		subscriber.await();
 
 		subscriber.assertValueCount(2);
-		subscriber.assertContainValues(new HashSet<>(Arrays.asList(new GetResponse(KEY_1_BBUFFER, VALUE_1_BBUFFER),
-				new GetResponse(KEY_2_BBUFFER, VALUE_2_BBUFFER))));
+		subscriber.assertContainValues(new HashSet<>(Arrays.asList(new ByteBufferResponse<>(KEY_1_BBUFFER, VALUE_1_BBUFFER),
+				new ByteBufferResponse<>(KEY_2_BBUFFER, VALUE_2_BBUFFER))));
 	}
 
 	/**
@@ -171,16 +172,17 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		nativeCommands.set(KEY_1, VALUE_1);
 		nativeCommands.set(KEY_3, VALUE_3);
 
-		Flux<GetResponse> result = connection.stringCommands()
+		Flux<ByteBufferResponse<ByteBuffer>> result = connection.stringCommands()
 				.get(Flux.fromStream(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER, KEY_3_BBUFFER).stream()));
 
-		TestSubscriber<GetResponse> subscriber = TestSubscriber.create();
+		TestSubscriber<ByteBufferResponse<ByteBuffer>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);
 		subscriber.await();
 
 		subscriber.assertValueCount(3);
-		subscriber.assertContainValues(new HashSet<>(Arrays.asList(new GetResponse(KEY_1_BBUFFER, VALUE_1_BBUFFER),
-				new GetResponse(KEY_2_BBUFFER, ByteBuffer.allocate(0)), new GetResponse(KEY_3_BBUFFER, VALUE_3_BBUFFER))));
+		subscriber.assertContainValues(new HashSet<>(Arrays.asList(new ByteBufferResponse<>(KEY_1_BBUFFER, VALUE_1_BBUFFER),
+				new ByteBufferResponse<>(KEY_2_BBUFFER, ByteBuffer.allocate(0)),
+				new ByteBufferResponse<>(KEY_3_BBUFFER, VALUE_3_BBUFFER))));
 	}
 
 	/**
@@ -223,7 +225,7 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		Flux<List<ByteBuffer>> result = connection.stringCommands()
 				.mGet(
 						Flux.fromIterable(Arrays.asList(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), Arrays.asList(KEY_2_BBUFFER))))
-				.map(MGetResponse::getOutput);
+				.map(MultiValueResponse::getOutput);
 
 		TestSubscriber<List<ByteBuffer>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);

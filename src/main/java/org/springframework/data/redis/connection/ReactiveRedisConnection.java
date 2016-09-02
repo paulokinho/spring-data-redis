@@ -50,10 +50,38 @@ public interface ReactiveRedisConnection extends Closeable {
 	ReactiveStringCommands stringCommands();
 
 	@Data
-	static class CommandResponse<I, O> {
+	public static class CommandResponse<I, O> {
 
 		private final I input;
 		private final O output;
+	}
+
+	public static class BooleanResponse<I> extends CommandResponse<I, Boolean> {
+
+		public BooleanResponse(I input, Boolean output) {
+			super(input, output);
+		}
+	}
+
+	public static class ByteBufferResponse<I> extends CommandResponse<I, ByteBuffer> {
+
+		public ByteBufferResponse(I input, ByteBuffer output) {
+			super(input, output);
+		}
+	}
+
+	public static class MultiValueResponse<I, O> extends CommandResponse<I, List<O>> {
+
+		public MultiValueResponse(I input, List<O> output) {
+			super(input, output);
+		}
+	}
+
+	public static class NumericResponse<I, O extends Number> extends CommandResponse<I, O> {
+
+		public NumericResponse(I input, O output) {
+			super(input, output);
+		}
 	}
 
 	/**
@@ -93,7 +121,7 @@ public interface ReactiveRedisConnection extends Closeable {
 			Assert.notNull(key, "Key must not be null!");
 			Assert.notNull(value, "Value must not be null!");
 
-			return set(Mono.just(new KeyValue(key, value))).next().map(SetResponse::getOutput);
+			return set(Mono.just(new KeyValue(key, value))).next().map(BooleanResponse::getOutput);
 		}
 
 		/**
@@ -103,7 +131,7 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return {@link Flux} of {@link SetResponse} holding the {@link KeyValue} pair to set along with the command
 		 *         result.
 		 */
-		Flux<SetResponse> set(Publisher<KeyValue> values);
+		Flux<BooleanResponse<KeyValue>> set(Publisher<KeyValue> values);
 
 		/**
 		 * Get single element stored at {@literal key}.
@@ -123,7 +151,7 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @param keys must not be {@literal null}.
 		 * @return {@link Flux} of {@link GetResponse} holding the {@literal key} to get along with the value retrieved.
 		 */
-		Flux<GetResponse> get(Publisher<ByteBuffer> keys);
+		Flux<ByteBufferResponse<ByteBuffer>> get(Publisher<ByteBuffer> keys);
 
 		/**
 		 * Set {@literal value} for {@literal key} and return the existing value.
@@ -137,7 +165,7 @@ public interface ReactiveRedisConnection extends Closeable {
 			Assert.notNull(key, "Key must not be null!");
 			Assert.notNull(value, "Value must not be null!");
 
-			return getSet(Mono.just(new KeyValue(key, value))).next().map(GetSetResponse::getOutput);
+			return getSet(Mono.just(new KeyValue(key, value))).next().map(ByteBufferResponse::getOutput);
 		}
 
 		/**
@@ -148,7 +176,7 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return {@link Flux} of {@link GetSetResponse} holding the {@link KeyValue} pair to set along with the previously
 		 *         existing value.
 		 */
-		Flux<GetSetResponse> getSet(Publisher<KeyValue> values);
+		Flux<ByteBufferResponse<KeyValue>> getSet(Publisher<KeyValue> values);
 
 		/**
 		 * Set {@literal value} for {@literal key} with {@literal expiration} and {@literal options}.
@@ -167,7 +195,7 @@ public interface ReactiveRedisConnection extends Closeable {
 			Assert.notNull(option, "Option must not be null!");
 
 			return set(Mono.just(new KeyValue(key, value)), () -> expiration, () -> option).next()
-					.map(SetResponse::getOutput);
+					.map(BooleanResponse::getOutput);
 		}
 
 		/**
@@ -179,7 +207,8 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return {@link Flux} of {@link SetResponse} holding the {@link KeyValue} pair to set along with the command
 		 *         result.
 		 */
-		Flux<SetResponse> set(Publisher<KeyValue> values, Supplier<Expiration> expiration, Supplier<SetOption> option);
+		Flux<BooleanResponse<KeyValue>> set(Publisher<KeyValue> values, Supplier<Expiration> expiration,
+				Supplier<SetOption> option);
 
 		/**
 		 * Get multiple values in one batch.
@@ -190,7 +219,7 @@ public interface ReactiveRedisConnection extends Closeable {
 		default Mono<List<ByteBuffer>> mGet(List<ByteBuffer> keys) {
 
 			Assert.notNull(keys, "Keys must not be null!");
-			return mGet(Mono.just(keys)).next().map(MGetResponse::getOutput);
+			return mGet(Mono.just(keys)).next().map(MultiValueResponse::getOutput);
 		}
 
 		/**
@@ -200,48 +229,7 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @param keys must not be {@literal null}.
 		 * @return
 		 */
-		Flux<MGetResponse> mGet(Publisher<List<ByteBuffer>> keysets);
-
-		static class SetResponse extends CommandResponse<KeyValue, Boolean> {
-
-			public SetResponse(KeyValue input, Boolean output) {
-				super(input, output);
-			}
-
-		}
-
-		/**
-		 * @author Christoph Strobl
-		 * @since 2.0
-		 */
-		static class GetResponse extends CommandResponse<ByteBuffer, ByteBuffer> {
-
-			public GetResponse(ByteBuffer input, ByteBuffer output) {
-				super(input, output);
-			}
-		}
-
-		/**
-		 * @author Christoph Strobl
-		 * @since 2.0
-		 */
-		static class GetSetResponse extends CommandResponse<KeyValue, ByteBuffer> {
-
-			public GetSetResponse(KeyValue input, ByteBuffer output) {
-				super(input, output);
-			}
-		}
-
-		/**
-		 * @author Christoph Strobl
-		 * @since 2.0
-		 */
-		static class MGetResponse extends CommandResponse<List<ByteBuffer>, List<ByteBuffer>> {
-
-			public MGetResponse(List<ByteBuffer> input, List<ByteBuffer> output) {
-				super(input, output);
-			}
-		}
+		Flux<MultiValueResponse<List<ByteBuffer>, ByteBuffer>> mGet(Publisher<List<ByteBuffer>> keysets);
 
 	}
 
@@ -250,6 +238,14 @@ public interface ReactiveRedisConnection extends Closeable {
 	 * @since 2.0
 	 */
 	static interface ReactiveKeyCommands {
+
+		default Mono<Boolean> exists(ByteBuffer key) {
+
+			Assert.notNull(key, "Key must not be null!");
+			return exists(Mono.just(key)).next().map(BooleanResponse::getOutput);
+		}
+
+		Flux<BooleanResponse<ByteBuffer>> exists(Publisher<ByteBuffer> keys);
 
 		/**
 		 * Delete {@literal key}.
@@ -260,7 +256,7 @@ public interface ReactiveRedisConnection extends Closeable {
 		default Mono<Long> del(ByteBuffer key) {
 
 			Assert.notNull(key, "Key must not be null!");
-			return del(Mono.just(key)).next().map(DelResponse::getOutput);
+			return del(Mono.just(key)).next().map(NumericResponse::getOutput);
 		}
 
 		/**
@@ -269,7 +265,7 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @param keys must not be {@literal null}.
 		 * @return {@link Flux} of {@link DelResponse} holding the {@literal key} removed along with the deletion result.
 		 */
-		Flux<DelResponse> del(Publisher<ByteBuffer> keys);
+		Flux<NumericResponse<ByteBuffer, Long>> del(Publisher<ByteBuffer> keys);
 
 		/**
 		 * Delete multiple {@literal keys} one in one batch.
@@ -278,7 +274,9 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return
 		 */
 		default Mono<Long> mDel(List<ByteBuffer> keys) {
-			return mDel(Mono.just(keys)).next().map(MDelResponse::getOutput);
+
+			Assert.notEmpty(keys, "Keys must not be empty or null!");
+			return mDel(Mono.just(keys)).next().map(NumericResponse::getOutput);
 		}
 
 		/**
@@ -287,28 +285,6 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @param keys must not be {@literal null}.
 		 * @return {@link Flux} of {@link MDelResponse} holding the {@literal keys} removed along with the deletion result.
 		 */
-		Flux<MDelResponse> mDel(Publisher<List<ByteBuffer>> keys);
-
-		/**
-		 * @author Christoph Strobl
-		 * @since 2.0
-		 */
-		static class DelResponse extends CommandResponse<ByteBuffer, Long> {
-
-			public DelResponse(ByteBuffer input, Long output) {
-				super(input, output);
-			}
-		}
-
-		/**
-		 * @author Christoph Strobl
-		 * @since 2.0
-		 */
-		static class MDelResponse extends CommandResponse<List<ByteBuffer>, Long> {
-
-			public MDelResponse(List<ByteBuffer> input, Long output) {
-				super(input, output);
-			}
-		}
+		Flux<NumericResponse<List<ByteBuffer>, Long>> mDel(Publisher<List<ByteBuffer>> keys);
 	}
 }

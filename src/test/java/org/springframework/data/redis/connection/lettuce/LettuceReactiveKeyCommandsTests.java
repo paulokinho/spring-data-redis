@@ -18,11 +18,11 @@ package org.springframework.data.redis.connection.lettuce;
 import static org.hamcrest.core.Is.*;
 import static org.junit.Assert.*;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.junit.Test;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands.DelResponse;
-import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands.MDelResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -32,6 +32,25 @@ import reactor.test.TestSubscriber;
  * @author Christoph Strobl
  */
 public class LettuceReactiveKeyCommandsTests extends LettuceReactiveCommandsTestsBase {
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void existsShouldReturnTrueForExistingKeys() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+
+		assertThat(connection.keyCommands().exists(KEY_1_BBUFFER).block(), is(true));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void existsShouldReturnFalseForNonExistingKeys() {
+		assertThat(connection.keyCommands().exists(KEY_1_BBUFFER).block(), is(false));
+	}
 
 	/**
 	 * @see DATAREDIS-525
@@ -54,15 +73,15 @@ public class LettuceReactiveKeyCommandsTests extends LettuceReactiveCommandsTest
 		nativeCommands.set(KEY_1, VALUE_1);
 		nativeCommands.set(KEY_2, VALUE_2);
 
-		Flux<DelResponse> result = connection.keyCommands()
+		Flux<NumericResponse<ByteBuffer, Long>> result = connection.keyCommands()
 				.del(Flux.fromIterable(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER)));
 
-		TestSubscriber<DelResponse> subscriber = TestSubscriber.create();
+		TestSubscriber<NumericResponse<ByteBuffer, Long>> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);
 		subscriber.await();
 
 		subscriber.assertValueCount(2);
-		subscriber.assertValues(new DelResponse(KEY_1_BBUFFER, 1L), new DelResponse(KEY_2_BBUFFER, 1L));
+		subscriber.assertValues(new NumericResponse<>(KEY_1_BBUFFER, 1L), new NumericResponse<>(KEY_2_BBUFFER, 1L));
 	}
 
 	/**
@@ -91,7 +110,7 @@ public class LettuceReactiveKeyCommandsTests extends LettuceReactiveCommandsTest
 		Flux<Long> result = connection.keyCommands()
 				.mDel(
 						Flux.fromIterable(Arrays.asList(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), Arrays.asList(KEY_1_BBUFFER))))
-				.map(MDelResponse::getOutput);
+				.map(NumericResponse::getOutput);
 
 		TestSubscriber<Long> subscriber = TestSubscriber.create();
 		result.subscribe(subscriber);

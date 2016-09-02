@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 import org.springframework.util.Assert;
 
 import reactor.core.publisher.Flux;
@@ -46,16 +48,33 @@ public class LettuceReactiveKeyCommands implements ReactiveRedisConnection.React
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands#del(org.reactivestreams.Publisher)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands#exists(org.reactivestreams.Publisher)
 	 */
 	@Override
-	public Flux<DelResponse> del(Publisher<ByteBuffer> keys) {
+	public Flux<BooleanResponse<ByteBuffer>> exists(Publisher<ByteBuffer> keys) {
 
 		return connection.execute(cmd -> {
 
 			return Flux.from(keys).flatMap((key) -> {
-				return LettuceReactiveRedisConnection.<DelResponse> monoConverter()
-						.convert(cmd.del(key.array()).map((value) -> new DelResponse(key, value)));
+				return LettuceReactiveRedisConnection.<BooleanResponse<ByteBuffer>> monoConverter()
+						.convert(cmd.exists(key.array()).map(LettuceConverters.longToBooleanConverter()::convert)
+								.map((value) -> new BooleanResponse<>(key, value)));
+			});
+		});
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands#del(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<NumericResponse<ByteBuffer, Long>> del(Publisher<ByteBuffer> keys) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap((key) -> {
+				return LettuceReactiveRedisConnection.<NumericResponse<ByteBuffer, Long>> monoConverter()
+						.convert(cmd.del(key.array()).map((value) -> new NumericResponse<>(key, value)));
 			});
 		});
 	}
@@ -65,15 +84,15 @@ public class LettuceReactiveKeyCommands implements ReactiveRedisConnection.React
 	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands#mDel(org.reactivestreams.Publisher)
 	 */
 	@Override
-	public Flux<MDelResponse> mDel(Publisher<List<ByteBuffer>> keysCollection) {
+	public Flux<NumericResponse<List<ByteBuffer>, Long>> mDel(Publisher<List<ByteBuffer>> keysCollection) {
 
 		return connection.execute(cmd -> {
 
 			return Flux.from(keysCollection).flatMap((keys) -> {
-				return LettuceReactiveRedisConnection.<MDelResponse> monoConverter()
+				return LettuceReactiveRedisConnection.<NumericResponse<List<ByteBuffer>, Long>> monoConverter()
 						.convert(cmd
 								.del(keys.stream().map(ByteBuffer::array).collect(Collectors.toList()).toArray(new byte[keys.size()][]))
-								.map((value) -> new MDelResponse(keys, value)));
+								.map((value) -> new NumericResponse<>(keys, value)));
 			});
 		});
 	}
