@@ -330,4 +330,14 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		assertThat(nativeCommands.get(KEY_2), is(equalTo(VALUE_2)));
 	}
 
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void appendShouldDoItsThing() {
+
+		assertThat(connection.stringCommands().append(KEY_1_BBUFFER, VALUE_1_BBUFFER).block(), is(7L));
+		assertThat(connection.stringCommands().append(KEY_1_BBUFFER, VALUE_2_BBUFFER).block(), is(14L));
+	}
+
 }

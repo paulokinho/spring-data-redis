@@ -51,6 +51,10 @@ public interface ReactiveRedisConnection extends Closeable {
 	 */
 	ReactiveStringCommands stringCommands();
 
+	/**
+	 */
+	ReactiveNumberCommands numberCommands();
+
 	@Data
 	public static class CommandResponse<I, O> {
 
@@ -291,8 +295,8 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> pSetEX(ByteBuffer key, ByteBuffer value, Expiration expireTimeout) {
 
-			Assert.notNull(key, "Keys must not be null!");
-			Assert.notNull(value, "Keys must not be null!");
+			Assert.notNull(key, "Key must not be null!");
+			Assert.notNull(value, "Value must not be null!");
 			Assert.notNull(key, "ExpireTimeout must not be null!");
 
 			return pSetEX(Mono.just(new KeyValue(key, value)), () -> expireTimeout).next().map(BooleanResponse::getOutput);
@@ -353,6 +357,39 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		Flux<BooleanResponse<List<KeyValue>>> mSetNX(Publisher<List<KeyValue>> source);
 
+		/**
+		 * Append a {@code value} to {@code key}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @param value must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Long> append(ByteBuffer key, ByteBuffer value) {
+
+			Assert.notNull(key, "Key must not be null!");
+			Assert.notNull(value, "Value must not be null!");
+
+			return append(Mono.just(new KeyValue(key, value))).next().map(NumericResponse::getOutput);
+		}
+
+		/**
+		 * Append a {@link KeyValue#value} to {@link KeyValue#key}
+		 *
+		 * @param source must not be {@literal null}.
+		 * @return
+		 */
+		Flux<NumericResponse<KeyValue, Long>> append(Publisher<KeyValue> source);
+	}
+
+	static interface ReactiveNumberCommands {
+
+		Flux<NumericResponse<ByteBuffer, Long>> incr(Publisher<ByteBuffer> keys);
+
+		Flux<NumericResponse<ByteBuffer, Long>> incrBy(Publisher<ByteBuffer> keys, Supplier<Number> supplier);
+
+		Flux<NumericResponse<ByteBuffer, Long>> decr(Publisher<ByteBuffer> keys);
+
+		Flux<NumericResponse<ByteBuffer, Long>> decrBy(Publisher<ByteBuffer> keys, Supplier<Number> supplier);
 	}
 
 	/**

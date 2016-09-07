@@ -27,6 +27,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.Boolean
 import org.springframework.data.redis.connection.ReactiveRedisConnection.ByteBufferResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyValue;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.data.redis.core.types.Expiration;
@@ -237,6 +238,23 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 
 				return LettuceReactiveRedisConnection.<Boolean> monoConverter().convert(cmd.msetnx(map))
 						.map((value) -> new BooleanResponse<>(values, value));
+			});
+		});
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#append(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<NumericResponse<KeyValue, Long>> append(Publisher<KeyValue> source) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(source).flatMap(kv -> {
+
+				return LettuceReactiveRedisConnection.<Long> monoConverter()
+						.convert(cmd.append(kv.keyAsBytes(), kv.valueAsBytes())).map((value) -> new NumericResponse<>(kv, value));
 			});
 		});
 	}
