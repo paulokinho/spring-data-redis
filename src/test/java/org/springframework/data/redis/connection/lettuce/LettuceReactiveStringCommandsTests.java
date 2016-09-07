@@ -24,7 +24,9 @@ import static org.junit.Assert.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
@@ -274,7 +276,24 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 	public void pSetEXshouldSetKeyAndExpirationTime() {
 
 		connection.stringCommands().pSetEX(KEY_1_BBUFFER, VALUE_1_BBUFFER, Expiration.milliseconds(600)).block();
+
 		assertThat(nativeCommands.pttl(KEY_1) > 1, is(true));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void mSetShouldAddMultipleKeyValueParis() {
+
+		Map<ByteBuffer, ByteBuffer> map = new LinkedHashMap<>();
+		map.put(KEY_1_BBUFFER, VALUE_1_BBUFFER);
+		map.put(KEY_2_BBUFFER, VALUE_2_BBUFFER);
+
+		connection.stringCommands().mSet(map).block();
+
+		assertThat(nativeCommands.get(KEY_1), is(equalTo(VALUE_1)));
+		assertThat(nativeCommands.get(KEY_2), is(equalTo(VALUE_2)));
 	}
 
 }

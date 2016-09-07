@@ -18,7 +18,9 @@ package org.springframework.data.redis.connection;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
@@ -304,6 +306,28 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return
 		 */
 		Flux<BooleanResponse<KeyValue>> pSetEX(Publisher<KeyValue> source, Supplier<Expiration> expireTimeout);
+
+		/**
+		 * Set multiple keys to multiple values using key-value pairs provided in {@code tuple}.
+		 *
+		 * @param tuples must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Boolean> mSet(Map<ByteBuffer, ByteBuffer> tuples) {
+
+			Assert.notNull(tuples, "Tuples must not be null!");
+
+			return mSet(Flux.just(tuples.entrySet().stream().map(entry -> new KeyValue(entry.getKey(), entry.getValue()))
+					.collect(Collectors.toList()))).next().map(BooleanResponse::getOutput);
+		}
+
+		/**
+		 * Set multiple keys to multiple values using key-value pairs provided in {@code source}.
+		 *
+		 * @param source must not be {@literal null}.
+		 * @return
+		 */
+		Flux<BooleanResponse<List<KeyValue>>> mSet(Publisher<List<KeyValue>> source);
 
 	}
 

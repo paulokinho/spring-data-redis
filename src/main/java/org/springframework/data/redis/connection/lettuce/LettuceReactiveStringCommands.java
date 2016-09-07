@@ -16,7 +16,9 @@
 package org.springframework.data.redis.connection.lettuce;
 
 import java.nio.ByteBuffer;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -195,6 +197,26 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 						.convert(
 								cmd.psetex(kv.keyAsBytes(), expireTimeout.get().getExpirationTimeInMilliseconds(), kv.valueAsBytes()))
 						.map(LettuceConverters::stringToBoolean).map((value) -> new BooleanResponse<>(kv, value));
+			});
+		});
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#mSet(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<BooleanResponse<List<KeyValue>>> mSet(Publisher<List<KeyValue>> source) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(source).flatMap(values -> {
+
+				Map<byte[], byte[]> map = new LinkedHashMap<>();
+				values.forEach(kv -> map.put(kv.keyAsBytes(), kv.valueAsBytes()));
+
+				return LettuceReactiveRedisConnection.<String> monoConverter().convert(cmd.mset(map))
+						.map(LettuceConverters::stringToBoolean).map((value) -> new BooleanResponse<>(values, value));
 			});
 		});
 	}
