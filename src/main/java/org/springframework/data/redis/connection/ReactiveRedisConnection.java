@@ -258,17 +258,14 @@ public interface ReactiveRedisConnection extends Closeable {
 		 *
 		 * @param key must not be {@literal null}.
 		 * @param value must not be {@literal null}.
-		 * @param expireTimeout can be {@literal null}.
+		 * @param expireTimeout must not be {@literal null}.
 		 * @return
 		 */
 		default Mono<Boolean> setEX(ByteBuffer key, ByteBuffer value, Expiration expireTimeout) {
 
 			Assert.notNull(key, "Keys must not be null!");
 			Assert.notNull(value, "Keys must not be null!");
-
-			if (expireTimeout == null) {
-				return set(key, value);
-			}
+			Assert.notNull(key, "ExpireTimeout must not be null!");
 
 			return setEX(Mono.just(new KeyValue(key, value)), () -> expireTimeout).next().map(BooleanResponse::getOutput);
 		}
@@ -281,6 +278,32 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return
 		 */
 		Flux<BooleanResponse<KeyValue>> setEX(Publisher<KeyValue> source, Supplier<Expiration> expireTimeout);
+
+		/**
+		 * Set {@code key value} pair and {@link Expiration}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @param value must not be {@literal null}.
+		 * @param expireTimeout must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Boolean> pSetEX(ByteBuffer key, ByteBuffer value, Expiration expireTimeout) {
+
+			Assert.notNull(key, "Keys must not be null!");
+			Assert.notNull(value, "Keys must not be null!");
+			Assert.notNull(key, "ExpireTimeout must not be null!");
+
+			return pSetEX(Mono.just(new KeyValue(key, value)), () -> expireTimeout).next().map(BooleanResponse::getOutput);
+		}
+
+		/**
+		 * Set {@code key value} pairs and {@link Expiration}.
+		 *
+		 * @param source must not be {@literal null}.
+		 * @param expireTimeout must not be {@literal null}.
+		 * @return
+		 */
+		Flux<BooleanResponse<KeyValue>> pSetEX(Publisher<KeyValue> source, Supplier<Expiration> expireTimeout);
 
 	}
 

@@ -267,4 +267,14 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		assertThat(nativeCommands.ttl(KEY_1) > 1, is(true));
 	}
 
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void pSetEXshouldSetKeyAndExpirationTime() {
+
+		connection.stringCommands().pSetEX(KEY_1_BBUFFER, VALUE_1_BBUFFER, Expiration.milliseconds(600)).block();
+		assertThat(nativeCommands.pttl(KEY_1) > 1, is(true));
+	}
+
 }

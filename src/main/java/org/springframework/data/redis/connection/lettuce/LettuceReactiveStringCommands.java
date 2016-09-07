@@ -179,4 +179,23 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 			});
 		});
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#pSetEX(org.reactivestreams.Publisher, java.util.function.Supplier)
+	 */
+	@Override
+	public Flux<BooleanResponse<KeyValue>> pSetEX(Publisher<KeyValue> source, Supplier<Expiration> expireTimeout) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(source).flatMap(kv -> {
+
+				return LettuceReactiveRedisConnection.<String> monoConverter()
+						.convert(
+								cmd.psetex(kv.keyAsBytes(), expireTimeout.get().getExpirationTimeInMilliseconds(), kv.valueAsBytes()))
+						.map(LettuceConverters::stringToBoolean).map((value) -> new BooleanResponse<>(kv, value));
+			});
+		});
+	}
 }
