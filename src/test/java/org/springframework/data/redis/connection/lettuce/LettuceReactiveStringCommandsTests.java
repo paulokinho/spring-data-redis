@@ -31,6 +31,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.Boolean
 import org.springframework.data.redis.connection.ReactiveRedisConnection.ByteBufferResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyValue;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
+import org.springframework.data.redis.core.types.Expiration;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -253,6 +254,17 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		nativeCommands.setnx(KEY_1, VALUE_1);
 
 		assertThat(connection.stringCommands().setNX(KEY_1_BBUFFER, VALUE_2_BBUFFER).block(), is(false));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void setEXshouldSetKeyAndExpirationTime() {
+
+		connection.stringCommands().setEX(KEY_1_BBUFFER, VALUE_1_BBUFFER, Expiration.seconds(3)).block();
+
+		assertThat(nativeCommands.ttl(KEY_1) > 1, is(true));
 	}
 
 }
