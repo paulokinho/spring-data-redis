@@ -236,4 +236,23 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 				new HashSet<>(Arrays.asList(Arrays.asList(VALUE_1_BBUFFER, VALUE_2_BBUFFER), Arrays.asList(VALUE_2_BBUFFER))));
 	}
 
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void setNXshouldOnlySetValueWhenNotPresent() {
+		assertThat(connection.stringCommands().setNX(KEY_1_BBUFFER, VALUE_1_BBUFFER).block(), is(true));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void setNXshouldNotSetValueWhenAlreadyPresent() {
+
+		nativeCommands.setnx(KEY_1, VALUE_1);
+
+		assertThat(connection.stringCommands().setNX(KEY_1_BBUFFER, VALUE_2_BBUFFER).block(), is(false));
+	}
+
 }

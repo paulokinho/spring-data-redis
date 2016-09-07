@@ -64,8 +64,10 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 
 			return Flux.from(keyCollections).flatMap((keys) -> {
 
-				return LettuceReactiveRedisConnection.<MultiValueResponse<List<ByteBuffer>, ByteBuffer>> monoConverter().convert(
-						cmd.mget(keys.stream().map(ByteBuffer::array).collect(Collectors.toList()).toArray(new byte[keys.size()][]))
+				return LettuceReactiveRedisConnection.<MultiValueResponse<List<ByteBuffer>, ByteBuffer>> monoConverter()
+						.convert(cmd
+								.mget(
+										keys.stream().map(ByteBuffer::array).collect(Collectors.toList()).toArray(new byte[keys.size()][]))
 								.map((value) -> value != null ? ByteBuffer.wrap(value) : ByteBuffer.allocate(0)).toList()
 								.map((values) -> new MultiValueResponse<>(keys, values)));
 			});
@@ -144,4 +146,20 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 		});
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#setNX(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<BooleanResponse<KeyValue>> setNX(Publisher<KeyValue> values) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(values).flatMap(kv -> {
+				return LettuceReactiveRedisConnection.<Boolean> monoConverter()
+						.convert(cmd.setnx(kv.keyAsBytes(), kv.valueAsBytes()))
+						.map((value) -> new BooleanResponse<KeyValue>(kv, value));
+			});
+		});
+	}
 }

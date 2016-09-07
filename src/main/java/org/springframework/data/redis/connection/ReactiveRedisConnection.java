@@ -223,13 +223,35 @@ public interface ReactiveRedisConnection extends Closeable {
 		}
 
 		/**
-		 * <br />
 		 * Get multiple values at in batches.
 		 * 
 		 * @param keys must not be {@literal null}.
 		 * @return
 		 */
 		Flux<MultiValueResponse<List<ByteBuffer>, ByteBuffer>> mGet(Publisher<List<ByteBuffer>> keysets);
+
+		/**
+		 * Set {@code value} for {@code key}, only if {@code key} does not exist.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @param value must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Boolean> setNX(ByteBuffer key, ByteBuffer value) {
+
+			Assert.notNull(key, "Keys must not be null!");
+			Assert.notNull(value, "Keys must not be null!");
+
+			return setNX(Mono.just(new KeyValue(key, value))).next().map(BooleanResponse::getOutput);
+		}
+
+		/**
+		 * Set {@code key value} pairs, only if {@code key} does not exist.
+		 *
+		 * @param values must not be {@literal null}.
+		 * @return
+		 */
+		Flux<BooleanResponse<KeyValue>> setNX(Publisher<KeyValue> values);
 
 	}
 
