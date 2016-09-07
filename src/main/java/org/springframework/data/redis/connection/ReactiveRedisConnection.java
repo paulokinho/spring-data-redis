@@ -329,6 +329,30 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		Flux<BooleanResponse<List<KeyValue>>> mSet(Publisher<List<KeyValue>> source);
 
+		/**
+		 * Set multiple keys to multiple values using key-value pairs provided in {@code tuples} only if the provided key
+		 * does not exist.
+		 *
+		 * @param tuples must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Boolean> mSetNX(Map<ByteBuffer, ByteBuffer> tuples) {
+
+			Assert.notNull(tuples, "Tuples must not be null!");
+
+			return mSetNX(Flux.just(tuples.entrySet().stream().map(entry -> new KeyValue(entry.getKey(), entry.getValue()))
+					.collect(Collectors.toList()))).next().map(BooleanResponse::getOutput);
+		}
+
+		/**
+		 * Set multiple keys to multiple values using key-value pairs provided in {@code tuples} only if the provided key
+		 * does not exist.
+		 *
+		 * @param source must not be {@literal null}.
+		 * @return
+		 */
+		Flux<BooleanResponse<List<KeyValue>>> mSetNX(Publisher<List<KeyValue>> source);
+
 	}
 
 	/**

@@ -220,4 +220,24 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 			});
 		});
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#mSet(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<BooleanResponse<List<KeyValue>>> mSetNX(Publisher<List<KeyValue>> source) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(source).flatMap(values -> {
+
+				Map<byte[], byte[]> map = new LinkedHashMap<>();
+				values.forEach(kv -> map.put(kv.keyAsBytes(), kv.valueAsBytes()));
+
+				return LettuceReactiveRedisConnection.<Boolean> monoConverter().convert(cmd.msetnx(map))
+						.map((value) -> new BooleanResponse<>(values, value));
+			});
+		});
+	}
 }

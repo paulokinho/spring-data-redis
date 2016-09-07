@@ -296,4 +296,38 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		assertThat(nativeCommands.get(KEY_2), is(equalTo(VALUE_2)));
 	}
 
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void mSetNXShouldAddMultipleKeyValueParis() {
+
+		Map<ByteBuffer, ByteBuffer> map = new LinkedHashMap<>();
+		map.put(KEY_1_BBUFFER, VALUE_1_BBUFFER);
+		map.put(KEY_2_BBUFFER, VALUE_2_BBUFFER);
+
+		connection.stringCommands().mSetNX(map).block();
+
+		assertThat(nativeCommands.get(KEY_1), is(equalTo(VALUE_1)));
+		assertThat(nativeCommands.get(KEY_2), is(equalTo(VALUE_2)));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void mSetNXShouldNotAddMultipleKeyValueParisWhenAlreadyExit() {
+
+		nativeCommands.set(KEY_2, VALUE_2);
+
+		Map<ByteBuffer, ByteBuffer> map = new LinkedHashMap<>();
+		map.put(KEY_1_BBUFFER, VALUE_1_BBUFFER);
+		map.put(KEY_2_BBUFFER, VALUE_2_BBUFFER);
+
+		assertThat(connection.stringCommands().mSetNX(map).block(), is(false));
+
+		assertThat(nativeCommands.exists(KEY_1), is(false));
+		assertThat(nativeCommands.get(KEY_2), is(equalTo(VALUE_2)));
+	}
+
 }
