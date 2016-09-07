@@ -340,4 +340,16 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		assertThat(connection.stringCommands().append(KEY_1_BBUFFER, VALUE_2_BBUFFER).block(), is(14L));
 	}
 
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void getRangeShouldReturnSubstringCorrectly() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+
+		assertThat(connection.stringCommands().getRange(KEY_1_BBUFFER, 2, 3).block(),
+				is(equalTo(ByteBuffer.wrap("lu".getBytes()))));
+	}
+
 }

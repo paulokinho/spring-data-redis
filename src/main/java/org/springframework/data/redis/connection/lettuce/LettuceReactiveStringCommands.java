@@ -258,4 +258,22 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 			});
 		});
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#getRange(org.reactivestreams.Publisher, java.util.function.Supplier, java.util.function.Supplier)
+	 */
+	@Override
+	public Flux<ByteBufferResponse<ByteBuffer>> getRange(Publisher<ByteBuffer> keys, Supplier<Long> begin,
+			Supplier<Long> end) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap(key -> {
+				return LettuceReactiveRedisConnection.<ByteBuffer> monoConverter()
+						.convert(cmd.getrange(key.array(), begin.get(), end.get()).map(ByteBuffer::wrap))
+						.map((value) -> new ByteBufferResponse<>(key, value));
+			});
+		});
+	}
 }

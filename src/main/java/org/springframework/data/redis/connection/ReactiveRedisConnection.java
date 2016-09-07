@@ -379,6 +379,30 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return
 		 */
 		Flux<NumericResponse<KeyValue, Long>> append(Publisher<KeyValue> source);
+
+		/**
+		 * Get a substring of value of {@code key} between {@code begin} and {@code end}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @param begin
+		 * @param end
+		 * @return
+		 */
+		default Mono<ByteBuffer> getRange(ByteBuffer key, long begin, long end) {
+
+			Assert.notNull(key, "Key must not be null!");
+			return getRange(Mono.just(key), () -> begin, () -> end).next().map(ByteBufferResponse::getOutput);
+		}
+
+		/**
+		 * Get a substring of value of {@code key} between {@code begin} and {@code end}.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @param begin
+		 * @param end
+		 * @return
+		 */
+		Flux<ByteBufferResponse<ByteBuffer>> getRange(Publisher<ByteBuffer> keys, Supplier<Long> begin, Supplier<Long> end);
 	}
 
 	static interface ReactiveNumberCommands {
