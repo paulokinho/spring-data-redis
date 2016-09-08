@@ -403,6 +403,33 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return
 		 */
 		Flux<ByteBufferResponse<ByteBuffer>> getRange(Publisher<ByteBuffer> keys, Supplier<Long> begin, Supplier<Long> end);
+
+		/**
+		 * Overwrite parts of {@code key} starting at the specified {@code offset} with given {@code value}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @param value must not be {@literal null}.
+		 * @param offset
+		 * @return
+		 */
+		default Mono<Long> setRange(ByteBuffer key, ByteBuffer value, long offset) {
+
+			Assert.notNull(key, "Key must not be null!");
+			Assert.notNull(value, "Value must not be null!");
+
+			return setRange(Mono.just(new KeyValue(key, value)), () -> Long.valueOf(offset)).next()
+					.map(NumericResponse::getOutput);
+		}
+
+		/**
+		 * Overwrite parts of {@link KeyValue#key} starting at the specified {@code offset} with given
+		 * {@link KeyValue#value}.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @param offset must not be {@literal null}.
+		 * @return
+		 */
+		Flux<NumericResponse<KeyValue, Long>> setRange(Publisher<KeyValue> keys, Supplier<Long> offset);
 	}
 
 	static interface ReactiveNumberCommands {

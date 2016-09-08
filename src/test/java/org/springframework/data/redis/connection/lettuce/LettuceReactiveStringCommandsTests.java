@@ -352,4 +352,15 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 				is(equalTo(ByteBuffer.wrap("lu".getBytes()))));
 	}
 
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void setRangeShouldReturnNewStringLengthCorrectly() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+
+		assertThat(connection.stringCommands().setRange(KEY_1_BBUFFER, VALUE_2_BBUFFER, 3).block(), is(10L));
+	}
+
 }

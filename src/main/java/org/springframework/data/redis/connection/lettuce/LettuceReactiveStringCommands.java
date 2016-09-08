@@ -276,4 +276,21 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 			});
 		});
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#setRange(org.reactivestreams.Publisher, java.util.function.Supplier)
+	 */
+	@Override
+	public Flux<NumericResponse<KeyValue, Long>> setRange(Publisher<KeyValue> keys, Supplier<Long> offset) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap(kv -> {
+				return LettuceReactiveRedisConnection.<Long> monoConverter()
+						.convert(cmd.setrange(kv.keyAsBytes(), offset.get(), kv.valueAsBytes()))
+						.map((value) -> new NumericResponse<>(kv, value));
+			});
+		});
+	}
 }
