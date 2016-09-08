@@ -293,4 +293,21 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 			});
 		});
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#getBit(org.reactivestreams.Publisher, java.util.function.Supplier)
+	 */
+	@Override
+	public Flux<BooleanResponse<ByteBuffer>> getBit(Publisher<ByteBuffer> keys, Supplier<Long> offset) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap(key -> {
+				return LettuceReactiveRedisConnection.<Boolean> monoConverter()
+						.convert(cmd.getbit(key.array(), offset.get()).map(LettuceConverters::toBoolean))
+						.map(value -> new BooleanResponse<>(key, value));
+			});
+		});
+	}
 }

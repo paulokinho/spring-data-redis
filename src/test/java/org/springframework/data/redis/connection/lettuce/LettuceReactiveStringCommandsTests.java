@@ -363,4 +363,16 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		assertThat(connection.stringCommands().setRange(KEY_1_BBUFFER, VALUE_2_BBUFFER, 3).block(), is(10L));
 	}
 
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void getBitShouldReturnValueCorrectly() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+
+		assertThat(connection.stringCommands().getBit(KEY_1_BBUFFER, 1).block(), is(true));
+		assertThat(connection.stringCommands().getBit(KEY_1_BBUFFER, 7).block(), is(false));
+	}
+
 }

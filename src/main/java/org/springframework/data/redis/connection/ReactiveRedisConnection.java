@@ -430,6 +430,29 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return
 		 */
 		Flux<NumericResponse<KeyValue, Long>> setRange(Publisher<KeyValue> keys, Supplier<Long> offset);
+
+		/**
+		 * Get the bit value at {@code offset} of value at {@code key}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @param offset
+		 * @return
+		 */
+		default Mono<Boolean> getBit(ByteBuffer key, long offset) {
+
+			Assert.notNull(key, "Key must not be null!");
+
+			return getBit(Mono.just(key), () -> Long.valueOf(offset)).next().map(BooleanResponse::getOutput);
+		}
+
+		/**
+		 * Get the bit value at {@code offset} of value at {@code key}.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @param offset must not be {@literal null}.
+		 * @return
+		 */
+		Flux<BooleanResponse<ByteBuffer>> getBit(Publisher<ByteBuffer> keys, Supplier<Long> offset);
 	}
 
 	static interface ReactiveNumberCommands {
