@@ -657,11 +657,64 @@ public interface ReactiveRedisConnection extends Closeable {
 		Flux<NumericResponse<ByteBuffer, Long>> strLen(Publisher<ByteBuffer> keys);
 	}
 
+	/**
+	 * @author Christoph Strobl
+	 * @since 2.0
+	 */
 	static interface ReactiveNumberCommands {
 
+		/**
+		 * Increment value of {@code key} by 1.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Long> incr(ByteBuffer key) {
+
+			try {
+				Assert.notNull(key, "key must not be null");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
+			return incr(Mono.just(key)).next().map(NumericResponse::getOutput);
+		}
+
+		/**
+		 * Increment value of {@code key} by 1.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @return
+		 */
 		Flux<NumericResponse<ByteBuffer, Long>> incr(Publisher<ByteBuffer> keys);
 
-		Flux<NumericResponse<ByteBuffer, Long>> incrBy(Publisher<ByteBuffer> keys, Supplier<Number> supplier);
+		/**
+		 * Increment value of {@code key} by {@code value}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @param value must not be {@literal null}.
+		 * @return
+		 */
+		default <T extends Number> Mono<T> incrBy(ByteBuffer key, T value) {
+
+			try {
+				Assert.notNull(key, "key must not be null");
+				Assert.notNull(value, "value must not be null");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
+			return incrBy(Mono.just(key), () -> value).next().map(NumericResponse::getOutput);
+		}
+
+		/**
+		 * Increment value of {@code key} by {@code value}.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @param value must not be {@literal null}.
+		 * @return
+		 */
+		<T extends Number> Flux<NumericResponse<ByteBuffer, T>> incrBy(Publisher<ByteBuffer> keys, Supplier<T> value);
 
 		Flux<NumericResponse<ByteBuffer, Long>> decr(Publisher<ByteBuffer> keys);
 

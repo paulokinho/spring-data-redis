@@ -88,7 +88,7 @@ public class LettuceReactiveRedisConnection implements ReactiveRedisConnection {
 
 	@Override
 	public ReactiveNumberCommands numberCommands() {
-		throw new UnsupportedOperationException("Still needs to be implemented");
+		return new LettuceReactiveNumberCommands(this);
 	}
 
 	protected RedisClusterReactiveCommands<byte[], byte[]> getCommands() {
