@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
 import org.springframework.data.domain.Range;
+import org.springframework.data.redis.connection.RedisStringCommands.BitOperation;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.util.Assert;
@@ -125,8 +126,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> set(ByteBuffer key, ByteBuffer value) {
 
-			Assert.notNull(key, "Key must not be null!");
-			Assert.notNull(value, "Value must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+				Assert.notNull(value, "Value must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return set(Mono.just(new KeyValue(key, value))).next().map(BooleanResponse::getOutput);
 		}
@@ -148,7 +153,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<ByteBuffer> get(ByteBuffer key) {
 
-			Assert.notNull(key, "Key must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
 			return get(Mono.just(key)).next().map((result) -> result.getOutput());
 		}
 
@@ -169,8 +179,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<ByteBuffer> getSet(ByteBuffer key, ByteBuffer value) {
 
-			Assert.notNull(key, "Key must not be null!");
-			Assert.notNull(value, "Value must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+				Assert.notNull(value, "Value must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return getSet(Mono.just(new KeyValue(key, value))).next().map(ByteBufferResponse::getOutput);
 		}
@@ -196,10 +210,14 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> set(ByteBuffer key, ByteBuffer value, Expiration expiration, SetOption option) {
 
-			Assert.notNull(key, "Key must not be null!");
-			Assert.notNull(value, "Value must not be null!");
-			Assert.notNull(expiration, "Expiration must not be null!");
-			Assert.notNull(option, "Option must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+				Assert.notNull(value, "Value must not be null!");
+				Assert.notNull(expiration, "Expiration must not be null!");
+				Assert.notNull(option, "Option must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return set(Mono.just(new KeyValue(key, value)), () -> expiration, () -> option).next()
 					.map(BooleanResponse::getOutput);
@@ -225,7 +243,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<List<ByteBuffer>> mGet(List<ByteBuffer> keys) {
 
-			Assert.notNull(keys, "Keys must not be null!");
+			try {
+				Assert.notNull(keys, "Keys must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
 			return mGet(Mono.just(keys)).next().map(MultiValueResponse::getOutput);
 		}
 
@@ -246,8 +269,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> setNX(ByteBuffer key, ByteBuffer value) {
 
-			Assert.notNull(key, "Keys must not be null!");
-			Assert.notNull(value, "Keys must not be null!");
+			try {
+				Assert.notNull(key, "Keys must not be null!");
+				Assert.notNull(value, "Keys must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return setNX(Mono.just(new KeyValue(key, value))).next().map(BooleanResponse::getOutput);
 		}
@@ -270,9 +297,13 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> setEX(ByteBuffer key, ByteBuffer value, Expiration expireTimeout) {
 
-			Assert.notNull(key, "Keys must not be null!");
-			Assert.notNull(value, "Keys must not be null!");
-			Assert.notNull(key, "ExpireTimeout must not be null!");
+			try {
+				Assert.notNull(key, "Keys must not be null!");
+				Assert.notNull(value, "Keys must not be null!");
+				Assert.notNull(key, "ExpireTimeout must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return setEX(Mono.just(new KeyValue(key, value)), () -> expireTimeout).next().map(BooleanResponse::getOutput);
 		}
@@ -296,9 +327,13 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> pSetEX(ByteBuffer key, ByteBuffer value, Expiration expireTimeout) {
 
-			Assert.notNull(key, "Key must not be null!");
-			Assert.notNull(value, "Value must not be null!");
-			Assert.notNull(key, "ExpireTimeout must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+				Assert.notNull(value, "Value must not be null!");
+				Assert.notNull(key, "ExpireTimeout must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return pSetEX(Mono.just(new KeyValue(key, value)), () -> expireTimeout).next().map(BooleanResponse::getOutput);
 		}
@@ -320,7 +355,11 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> mSet(Map<ByteBuffer, ByteBuffer> tuples) {
 
-			Assert.notNull(tuples, "Tuples must not be null!");
+			try {
+				Assert.notNull(tuples, "Tuples must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return mSet(Flux.just(tuples.entrySet().stream().map(entry -> new KeyValue(entry.getKey(), entry.getValue()))
 					.collect(Collectors.toList()))).next().map(BooleanResponse::getOutput);
@@ -343,7 +382,11 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> mSetNX(Map<ByteBuffer, ByteBuffer> tuples) {
 
-			Assert.notNull(tuples, "Tuples must not be null!");
+			try {
+				Assert.notNull(tuples, "Tuples must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return mSetNX(Flux.just(tuples.entrySet().stream().map(entry -> new KeyValue(entry.getKey(), entry.getValue()))
 					.collect(Collectors.toList()))).next().map(BooleanResponse::getOutput);
@@ -367,8 +410,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Long> append(ByteBuffer key, ByteBuffer value) {
 
-			Assert.notNull(key, "Key must not be null!");
-			Assert.notNull(value, "Value must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+				Assert.notNull(value, "Value must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return append(Mono.just(new KeyValue(key, value))).next().map(NumericResponse::getOutput);
 		}
@@ -391,7 +438,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<ByteBuffer> getRange(ByteBuffer key, long begin, long end) {
 
-			Assert.notNull(key, "Key must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
 			return getRange(Mono.just(key), () -> begin, () -> end).next().map(ByteBufferResponse::getOutput);
 		}
 
@@ -415,8 +467,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Long> setRange(ByteBuffer key, ByteBuffer value, long offset) {
 
-			Assert.notNull(key, "Key must not be null!");
-			Assert.notNull(value, "Value must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+				Assert.notNull(value, "Value must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return setRange(Mono.just(new KeyValue(key, value)), () -> Long.valueOf(offset)).next()
 					.map(NumericResponse::getOutput);
@@ -441,7 +497,11 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> getBit(ByteBuffer key, long offset) {
 
-			Assert.notNull(key, "Key must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return getBit(Mono.just(key), () -> Long.valueOf(offset)).next().map(BooleanResponse::getOutput);
 		}
@@ -465,7 +525,11 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Boolean> setBit(ByteBuffer key, long offset, boolean value) {
 
-			Assert.notNull(key, "Key must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return setBit(Mono.just(key), () -> offset, () -> value).next().map(BooleanResponse::getOutput);
 		}
@@ -489,7 +553,11 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Long> bitCount(ByteBuffer key) {
 
-			Assert.notNull(key, "Key must not be null");
+			try {
+				Assert.notNull(key, "Key must not be null");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return bitCount(Mono.just(key)).next().map(NumericResponse::getOutput);
 		}
@@ -513,7 +581,11 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Long> bitCount(ByteBuffer key, long begin, long end) {
 
-			Assert.notNull(key, "Key must not be null");
+			try {
+				Assert.notNull(key, "Key must not be null");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
 
 			return bitCount(Mono.just(key), () -> new Range<>(begin, end)).next().map(NumericResponse::getOutput);
 		}
@@ -550,7 +622,12 @@ public interface ReactiveRedisConnection extends Closeable {
 
 		default Mono<Boolean> exists(ByteBuffer key) {
 
-			Assert.notNull(key, "Key must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
 			return exists(Mono.just(key)).next().map(BooleanResponse::getOutput);
 		}
 
@@ -564,7 +641,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Long> del(ByteBuffer key) {
 
-			Assert.notNull(key, "Key must not be null!");
+			try {
+				Assert.notNull(key, "Key must not be null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
 			return del(Mono.just(key)).next().map(NumericResponse::getOutput);
 		}
 
@@ -584,7 +666,12 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		default Mono<Long> mDel(List<ByteBuffer> keys) {
 
-			Assert.notEmpty(keys, "Keys must not be empty or null!");
+			try {
+				Assert.notEmpty(keys, "Keys must not be empty or null!");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
 			return mDel(Mono.just(keys)).next().map(NumericResponse::getOutput);
 		}
 

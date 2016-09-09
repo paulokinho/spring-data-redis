@@ -19,6 +19,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.repository.util.QueryExecutionConverters.ObservableToMonoConverter;
@@ -106,7 +107,12 @@ public class LettuceReactiveRedisConnection implements ReactiveRedisConnection {
 		return throwable -> {
 
 			if (throwable instanceof RuntimeException) {
-				return Flux.error(LettuceConverters.exceptionConverter().convert((RuntimeException) throwable));
+
+				DataAccessException convertedException = null;
+				if (throwable instanceof RuntimeException) {
+					convertedException = LettuceConverters.exceptionConverter().convert((RuntimeException) throwable);
+				}
+				return Flux.error(convertedException != null ? convertedException : throwable);
 			}
 
 			return Flux.error(throwable);
