@@ -453,6 +453,32 @@ public interface ReactiveRedisConnection extends Closeable {
 		 * @return
 		 */
 		Flux<BooleanResponse<ByteBuffer>> getBit(Publisher<ByteBuffer> keys, Supplier<Long> offset);
+
+		/**
+		 * Sets the bit at {@code offset} in value stored at {@code key} and return the original value.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @param offset
+		 * @param value
+		 * @return
+		 */
+		default Mono<Boolean> setBit(ByteBuffer key, long offset, boolean value) {
+
+			Assert.notNull(key, "Key must not be null!");
+
+			return setBit(Mono.just(key), () -> offset, () -> value).next().map(BooleanResponse::getOutput);
+		}
+
+		/**
+		 * Sets the bit at {@code offset} in value stored at {@code key} and return the original value.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @param offset must not be {@literal null}.
+		 * @param value must not be {@literal null}.
+		 * @return
+		 */
+		Flux<BooleanResponse<ByteBuffer>> setBit(Publisher<ByteBuffer> keys, Supplier<Long> offset,
+				Supplier<Boolean> value);
 	}
 
 	static interface ReactiveNumberCommands {
