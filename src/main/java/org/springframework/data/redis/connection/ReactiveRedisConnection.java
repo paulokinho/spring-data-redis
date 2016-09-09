@@ -601,6 +601,35 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		Flux<NumericResponse<ByteBuffer, Long>> bitCount(Publisher<ByteBuffer> keys, Supplier<Range<Long>> range);
 
+		/**
+		 * Perform bitwise operations between strings.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @param bitOp must not be {@literal null}.
+		 * @param destination must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Long> bitOp(List<ByteBuffer> keys, BitOperation bitOp, ByteBuffer destination) {
+
+			try {
+				Assert.notNull(keys, "keys must not be null");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
+			return bitOp(Mono.just(keys), () -> bitOp, () -> destination).next().map(NumericResponse::getOutput);
+		}
+
+		/**
+		 * Perform bitwise operations between strings.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @param bitOp must not be {@literal null}.
+		 * @param destination must not be {@literal null}.
+		 * @return
+		 */
+		Flux<NumericResponse<List<ByteBuffer>, Long>> bitOp(Publisher<List<ByteBuffer>> keys, Supplier<BitOperation> bitOp,
+				Supplier<ByteBuffer> destination);
 	}
 
 	static interface ReactiveNumberCommands {

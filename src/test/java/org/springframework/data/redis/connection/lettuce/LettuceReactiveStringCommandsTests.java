@@ -33,6 +33,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.Boolean
 import org.springframework.data.redis.connection.ReactiveRedisConnection.ByteBufferResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyValue;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
+import org.springframework.data.redis.connection.RedisStringCommands.BitOperation;
 import org.springframework.data.redis.core.types.Expiration;
 
 import reactor.core.publisher.Flux;
@@ -407,5 +408,43 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		nativeCommands.set(KEY_1, VALUE_1);
 
 		assertThat(connection.stringCommands().bitCount(KEY_1_BBUFFER, 2, 4).block(), is(13L));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void bitOpAndShouldWorkAsExpected() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+		nativeCommands.set(KEY_2, VALUE_2);
+
+		assertThat(connection.stringCommands()
+				.bitOp(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), BitOperation.AND, KEY_3_BBUFFER).block(), is(7L));
+		assertThat(nativeCommands.get(KEY_3), is(equalTo("value-0")));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void bitOpOrShouldWorkAsExpected() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+		nativeCommands.set(KEY_2, VALUE_2);
+
+		assertThat(connection.stringCommands()
+				.bitOp(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), BitOperation.OR, KEY_3_BBUFFER).block(), is(7L));
+		assertThat(nativeCommands.get(KEY_3), is(equalTo(VALUE_3)));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test(expected = IllegalArgumentException.class)
+	public void bitNotShouldThrowExceptionWhenMoreThanOnSourceKey() {
+
+		connection.stringCommands().bitOp(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), BitOperation.NOT, KEY_3_BBUFFER)
+				.block();
 	}
 }

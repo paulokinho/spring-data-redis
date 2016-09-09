@@ -30,6 +30,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyValu
 import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands;
+import org.springframework.data.redis.connection.RedisStringCommands.BitOperation;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.util.Assert;
@@ -37,6 +38,7 @@ import org.springframework.util.Assert;
 import com.lambdaworks.redis.SetArgs;
 
 import reactor.core.publisher.Flux;
+import rx.Observable;
 
 /**
  * @author Christoph Strobl
@@ -361,6 +363,47 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 				Range<Long> rangeToUse = range.get();
 				return LettuceReactiveRedisConnection.<Long> monoConverter()
 						.convert(cmd.bitcount(key.array(), rangeToUse.getLowerBound(), rangeToUse.getUpperBound()))
+						.map(value -> new NumericResponse<>(key, value));
+			});
+		});
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#bitOp(org.reactivestreams.Publisher, java.util.function.Supplier, java.util.function.Supplier)
+	 */
+	@Override
+	public Flux<NumericResponse<List<ByteBuffer>, Long>> bitOp(Publisher<List<ByteBuffer>> keys,
+			Supplier<BitOperation> bitOp, Supplier<ByteBuffer> destination) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap(key -> {
+
+				Observable<Long> result = null;
+				byte[] destinationKey = destination.get().array();
+				byte[][] sourceKeys = key.stream().map(ByteBuffer::array).toArray(size -> new byte[size][]);
+
+				switch (bitOp.get()) {
+					case AND:
+						result = cmd.bitopAnd(destinationKey, sourceKeys);
+						break;
+					case OR:
+						result = cmd.bitopOr(destinationKey, sourceKeys);
+						break;
+					case XOR:
+						result = cmd.bitopXor(destinationKey, sourceKeys);
+						break;
+					case NOT:
+
+						Assert.isTrue(sourceKeys.length == 1, "BITOP NOT does not allow more than 1 source key.");
+
+						result = cmd.bitopNot(destinationKey, sourceKeys[0]);
+						break;
+
+				}
+
+				return LettuceReactiveRedisConnection.<Long> monoConverter().convert(result)
 						.map(value -> new NumericResponse<>(key, value));
 			});
 		});
