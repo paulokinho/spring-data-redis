@@ -408,4 +408,19 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 			});
 		});
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#strLen(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<NumericResponse<ByteBuffer, Long>> strLen(Publisher<ByteBuffer> keys) {
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap(key -> {
+				return LettuceReactiveRedisConnection.<Long> monoConverter().convert(cmd.strlen(key.array()))
+						.map(respValue -> new NumericResponse<>(key, respValue));
+			});
+		});
+	}
 }

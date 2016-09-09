@@ -447,4 +447,14 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		connection.stringCommands().bitOp(Arrays.asList(KEY_1_BBUFFER, KEY_2_BBUFFER), BitOperation.NOT, KEY_3_BBUFFER)
 				.block();
 	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void strLenShouldReturnValueCorrectly() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+		assertThat(connection.stringCommands().strLen(KEY_1_BBUFFER).block(), is(7L));
+	}
 }

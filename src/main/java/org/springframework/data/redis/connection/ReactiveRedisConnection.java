@@ -630,6 +630,31 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		Flux<NumericResponse<List<ByteBuffer>, Long>> bitOp(Publisher<List<ByteBuffer>> keys, Supplier<BitOperation> bitOp,
 				Supplier<ByteBuffer> destination);
+
+		/**
+		 * Get the length of the value stored at {@code key}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Long> strLen(ByteBuffer key) {
+
+			try {
+				Assert.notNull(key, "key must not be null");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
+			return strLen(Mono.just(key)).next().map(NumericResponse::getOutput);
+		}
+
+		/**
+		 * Get the length of the value stored at {@code key}.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @return
+		 */
+		Flux<NumericResponse<ByteBuffer, Long>> strLen(Publisher<ByteBuffer> keys);
 	}
 
 	static interface ReactiveNumberCommands {
