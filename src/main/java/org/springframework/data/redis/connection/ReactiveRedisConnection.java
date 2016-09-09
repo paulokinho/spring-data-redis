@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
+import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.util.Assert;
@@ -479,6 +480,55 @@ public interface ReactiveRedisConnection extends Closeable {
 		 */
 		Flux<BooleanResponse<ByteBuffer>> setBit(Publisher<ByteBuffer> keys, Supplier<Long> offset,
 				Supplier<Boolean> value);
+
+		/**
+		 * Count the number of set bits (population counting) in value stored at {@code key}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<Long> bitCount(ByteBuffer key) {
+
+			Assert.notNull(key, "Key must not be null");
+
+			return bitCount(Mono.just(key)).next().map(NumericResponse::getOutput);
+		}
+
+		/**
+		 * Count the number of set bits (population counting) in value stored at {@code key}.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @return
+		 */
+		Flux<NumericResponse<ByteBuffer, Long>> bitCount(Publisher<ByteBuffer> keys);
+
+		/**
+		 * Count the number of set bits (population counting) of value stored at {@code key} between {@code begin} and
+		 * {@code end}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @param begin
+		 * @param end
+		 * @return
+		 */
+		default Mono<Long> bitCount(ByteBuffer key, long begin, long end) {
+
+			Assert.notNull(key, "Key must not be null");
+
+			return bitCount(Mono.just(key), () -> new Range<>(begin, end)).next().map(NumericResponse::getOutput);
+		}
+
+		/**
+		 * Count the number of set bits (population counting) of value stored at {@code key} between {@code begin} and
+		 * {@code end}.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @param begin must not be {@literal null}.
+		 * @param end must not be {@literal null}.
+		 * @return
+		 */
+		Flux<NumericResponse<ByteBuffer, Long>> bitCount(Publisher<ByteBuffer> keys, Supplier<Range<Long>> range);
+
 	}
 
 	static interface ReactiveNumberCommands {

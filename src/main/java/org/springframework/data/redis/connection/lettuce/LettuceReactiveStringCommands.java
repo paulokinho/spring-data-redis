@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
+import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.ByteBufferResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyValue;
@@ -327,6 +328,41 @@ public class LettuceReactiveStringCommands implements ReactiveStringCommands {
 						.map(respValue -> new BooleanResponse<>(key, respValue));
 			});
 		});
+	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#bitCount(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<NumericResponse<ByteBuffer, Long>> bitCount(Publisher<ByteBuffer> source) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(source).flatMap(value -> {
+				return LettuceReactiveRedisConnection.<Long> monoConverter().convert(cmd.bitcount(value.array()))
+						.map(responseValue -> new NumericResponse<>(value, responseValue));
+			});
+		});
+
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveStringCommands#bitCount(org.reactivestreams.Publisher, java.util.function.Supplier, java.util.function.Supplier)
+	 */
+	@Override
+	public Flux<NumericResponse<ByteBuffer, Long>> bitCount(Publisher<ByteBuffer> keys, Supplier<Range<Long>> range) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap(key -> {
+
+				Range<Long> rangeToUse = range.get();
+				return LettuceReactiveRedisConnection.<Long> monoConverter()
+						.convert(cmd.bitcount(key.array(), rangeToUse.getLowerBound(), rangeToUse.getUpperBound()))
+						.map(value -> new NumericResponse<>(key, value));
+			});
+		});
 	}
 }

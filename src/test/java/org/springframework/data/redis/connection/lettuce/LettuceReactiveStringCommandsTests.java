@@ -387,4 +387,25 @@ public class LettuceReactiveStringCommandsTests extends LettuceReactiveCommandsT
 		assertThat(nativeCommands.getbit(KEY_1, 1), is(0L));
 	}
 
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void bitCountShouldReturnValueCorrectly() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+
+		assertThat(connection.stringCommands().bitCount(KEY_1_BBUFFER).block(), is(28L));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void bitCountShouldCountInRangeCorrectly() {
+
+		nativeCommands.set(KEY_1, VALUE_1);
+
+		assertThat(connection.stringCommands().bitCount(KEY_1_BBUFFER, 2, 4).block(), is(13L));
+	}
 }
