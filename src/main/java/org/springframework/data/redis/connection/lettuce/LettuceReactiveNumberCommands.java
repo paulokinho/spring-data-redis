@@ -97,7 +97,14 @@ public class LettuceReactiveNumberCommands implements ReactiveNumberCommands {
 	 */
 	@Override
 	public Flux<NumericResponse<ByteBuffer, Long>> decr(Publisher<ByteBuffer> keys) {
-		throw new UnsupportedOperationException("implement me");
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap(key -> {
+				return LettuceReactiveRedisConnection.<Long> monoConverter().convert(cmd.decr(key.array()))
+						.map(value -> new NumericResponse<>(key, value));
+			});
+		});
 	}
 
 	/*
@@ -105,8 +112,29 @@ public class LettuceReactiveNumberCommands implements ReactiveNumberCommands {
 	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveNumberCommands#decrBy(org.reactivestreams.Publisher, java.util.function.Supplier)
 	 */
 	@Override
-	public Flux<NumericResponse<ByteBuffer, Long>> decrBy(Publisher<ByteBuffer> keys, Supplier<Number> supplier) {
-		throw new UnsupportedOperationException("implement me");
+	public <T extends Number> Flux<NumericResponse<ByteBuffer, T>> decrBy(Publisher<ByteBuffer> keys, Supplier<T> value) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap(key -> {
+
+				T decrBy = value.get();
+
+				Assert.notNull(decrBy, "Value for DECRBY must not be null.");
+
+				Observable<? extends Number> result = null;
+				if (decrBy instanceof Double || decrBy instanceof Float) {
+					throw new IllegalArgumentException(
+							"Redis does not support 'DECRBY' with floating point number. ¯\\_(ツ)_/¯ \r\nPlease try 'incrBy' with negative value.");
+				} else {
+					result = cmd.decrby(key.array(), decrBy.longValue());
+				}
+
+				return LettuceReactiveRedisConnection.<T> monoConverter()
+						.convert(result.map(val -> NumberUtils.convertNumberToTargetClass(val, decrBy.getClass())))
+						.map(res -> new NumericResponse<>(key, res));
+			});
+		});
 	}
 
 }

@@ -39,4 +39,20 @@ public class LettuceReactiveNumberCommandsTests extends LettuceReactiveCommandsT
 		assertThat(connection.numberCommands().incrBy(KEY_1_BBUFFER, 3).block(), is(3));
 	}
 
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test(expected = IllegalArgumentException.class)
+	public void decrByDoubleShouldDecreaseValueCorrectly() {
+		connection.numberCommands().decrBy(KEY_1_BBUFFER, 1.5D).block();
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void decrByIntegerShouldDecreaseValueCorrectly() {
+		assertThat(connection.numberCommands().decrBy(KEY_1_BBUFFER, 3).block(), is(-3));
+	}
+
 }
