@@ -20,8 +20,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
+import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.CommandResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 import org.springframework.util.Assert;
 
@@ -59,6 +61,23 @@ public class LettuceReactiveKeyCommands implements ReactiveRedisConnection.React
 				return LettuceReactiveRedisConnection.<BooleanResponse<ByteBuffer>> monoConverter()
 						.convert(cmd.exists(key.array()).map(LettuceConverters.longToBooleanConverter()::convert)
 								.map((value) -> new BooleanResponse<>(key, value)));
+			});
+		});
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands#type(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<CommandResponse<ByteBuffer, DataType>> type(Publisher<ByteBuffer> keys) {
+
+		return connection.execute(cmd -> {
+
+			return Flux.from(keys).flatMap(key -> {
+				return LettuceReactiveRedisConnection.<DataType> monoConverter()
+						.convert(cmd.type(key.array()).map(LettuceConverters::toDataType))
+						.map(respValue -> new CommandResponse<>(key, respValue));
 			});
 		});
 	}

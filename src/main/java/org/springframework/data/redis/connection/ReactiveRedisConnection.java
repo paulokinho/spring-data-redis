@@ -777,6 +777,12 @@ public interface ReactiveRedisConnection extends Closeable {
 	 */
 	static interface ReactiveKeyCommands {
 
+		/**
+		 * Determine if given {@code key} exists.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @return
+		 */
 		default Mono<Boolean> exists(ByteBuffer key) {
 
 			try {
@@ -788,7 +794,38 @@ public interface ReactiveRedisConnection extends Closeable {
 			return exists(Mono.just(key)).next().map(BooleanResponse::getOutput);
 		}
 
+		/**
+		 * Determine if given {@code key} exists.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @return
+		 */
 		Flux<BooleanResponse<ByteBuffer>> exists(Publisher<ByteBuffer> keys);
+
+		/**
+		 * Determine the type stored at {@code key}.
+		 *
+		 * @param key must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<DataType> type(ByteBuffer key) {
+
+			try {
+				Assert.notNull(key, "key must not be null");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
+			return type(Mono.just(key)).next().map(CommandResponse::getOutput);
+		}
+
+		/**
+		 * Determine the type stored at {@code key}.
+		 *
+		 * @param keys must not be {@literal null}.
+		 * @return
+		 */
+		Flux<CommandResponse<ByteBuffer, DataType>> type(Publisher<ByteBuffer> keys);
 
 		/**
 		 * Delete {@literal key}.

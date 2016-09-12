@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.junit.Test;
+import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 
 import reactor.core.publisher.Flux;
@@ -50,6 +51,21 @@ public class LettuceReactiveKeyCommandsTests extends LettuceReactiveCommandsTest
 	@Test
 	public void existsShouldReturnFalseForNonExistingKeys() {
 		assertThat(connection.keyCommands().exists(KEY_1_BBUFFER).block(), is(false));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void typeShouldReturnTypeCorrectly() {
+
+		nativeCommands.set(KEY_1, VALUE_2);
+		nativeCommands.sadd(KEY_2, VALUE_2);
+		nativeCommands.hset(KEY_3, KEY_1, VALUE_1);
+
+		assertThat(connection.keyCommands().type(KEY_1_BBUFFER).block(), is(DataType.STRING));
+		assertThat(connection.keyCommands().type(KEY_2_BBUFFER).block(), is(DataType.SET));
+		assertThat(connection.keyCommands().type(KEY_3_BBUFFER).block(), is(DataType.HASH));
 	}
 
 	/**
