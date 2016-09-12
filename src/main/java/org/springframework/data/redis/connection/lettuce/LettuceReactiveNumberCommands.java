@@ -124,8 +124,7 @@ public class LettuceReactiveNumberCommands implements ReactiveNumberCommands {
 
 				Observable<? extends Number> result = null;
 				if (decrBy instanceof Double || decrBy instanceof Float) {
-					throw new IllegalArgumentException(
-							"Redis does not support 'DECRBY' with floating point number. ¯\\_(ツ)_/¯ \r\nPlease try 'incrBy' with negative value.");
+					result = cmd.incrbyfloat(key.array(), decrBy.doubleValue() * (-1.0D));
 				} else {
 					result = cmd.decrby(key.array(), decrBy.longValue());
 				}

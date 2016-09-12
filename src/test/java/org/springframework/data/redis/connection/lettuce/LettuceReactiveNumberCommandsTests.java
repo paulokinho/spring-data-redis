@@ -21,6 +21,9 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+/**
+ * @author Christoph Strobl
+ */
 public class LettuceReactiveNumberCommandsTests extends LettuceReactiveCommandsTestsBase {
 
 	/**
@@ -42,9 +45,9 @@ public class LettuceReactiveNumberCommandsTests extends LettuceReactiveCommandsT
 	/**
 	 * @see DATAREDIS-525
 	 */
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void decrByDoubleShouldDecreaseValueCorrectly() {
-		connection.numberCommands().decrBy(KEY_1_BBUFFER, 1.5D).block();
+		assertThat(connection.numberCommands().decrBy(KEY_1_BBUFFER, 1.5D).block(), is(closeTo(-1.5D, 0D)));
 	}
 
 	/**
