@@ -828,6 +828,31 @@ public interface ReactiveRedisConnection extends Closeable {
 		Flux<CommandResponse<ByteBuffer, DataType>> type(Publisher<ByteBuffer> keys);
 
 		/**
+		 * Find all keys matching the given {@code pattern}.
+		 *
+		 * @param pattern must not be {@literal null}.
+		 * @return
+		 */
+		default Mono<List<ByteBuffer>> keys(ByteBuffer pattern) {
+
+			try {
+				Assert.notNull(pattern, "pattern must not be null");
+			} catch (IllegalArgumentException e) {
+				return Mono.error(e);
+			}
+
+			return keys(Mono.just(pattern)).next().map(MultiValueResponse::getOutput);
+		}
+
+		/**
+		 * Find all keys matching the given {@code pattern}.
+		 *
+		 * @param patterns must not be {@literal null}.
+		 * @return
+		 */
+		Flux<MultiValueResponse<ByteBuffer, ByteBuffer>> keys(Publisher<ByteBuffer> patterns);
+
+		/**
 		 * Delete {@literal key}.
 		 * 
 		 * @param key must not be {@literal null}.

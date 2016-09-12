@@ -24,6 +24,7 @@ import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.CommandResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 import org.springframework.util.Assert;
 
@@ -116,4 +117,19 @@ public class LettuceReactiveKeyCommands implements ReactiveRedisConnection.React
 		});
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands#keys(org.reactivestreams.Publisher)
+	 */
+	@Override
+	public Flux<MultiValueResponse<ByteBuffer, ByteBuffer>> keys(Publisher<ByteBuffer> patterns) {
+		return connection.execute(cmd -> {
+
+			return Flux.from(patterns).flatMap(pattern -> {
+				return LettuceReactiveRedisConnection.<List<ByteBuffer>> monoConverter()
+						.convert(cmd.keys(pattern.array()).map(ByteBuffer::wrap).toList())
+						.map(value -> new MultiValueResponse<>(pattern, value));
+			});
+		});
+	}
 }

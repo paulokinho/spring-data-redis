@@ -15,6 +15,7 @@
  */
 package org.springframework.data.redis.connection.lettuce;
 
+import static org.hamcrest.collection.IsCollectionWithSize.*;
 import static org.hamcrest.core.Is.*;
 import static org.junit.Assert.*;
 
@@ -66,6 +67,24 @@ public class LettuceReactiveKeyCommandsTests extends LettuceReactiveCommandsTest
 		assertThat(connection.keyCommands().type(KEY_1_BBUFFER).block(), is(DataType.STRING));
 		assertThat(connection.keyCommands().type(KEY_2_BBUFFER).block(), is(DataType.SET));
 		assertThat(connection.keyCommands().type(KEY_3_BBUFFER).block(), is(DataType.HASH));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void keysShouldReturnCorrectly() {
+
+		nativeCommands.set(KEY_1, VALUE_2);
+		nativeCommands.set(KEY_2, VALUE_2);
+		nativeCommands.set(KEY_3, VALUE_3);
+
+		nativeCommands.set(VALUE_1, KEY_1);
+		nativeCommands.set(VALUE_2, KEY_2);
+		nativeCommands.set(VALUE_3, KEY_3);
+
+		assertThat(connection.keyCommands().keys(ByteBuffer.wrap("*".getBytes())).block(), hasSize(6));
+		assertThat(connection.keyCommands().keys(ByteBuffer.wrap("key*".getBytes())).block(), hasSize(3));
 	}
 
 	/**
