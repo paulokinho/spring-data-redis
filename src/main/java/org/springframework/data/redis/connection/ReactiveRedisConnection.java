@@ -845,6 +845,13 @@ public interface ReactiveRedisConnection extends Closeable {
 		}
 
 		/**
+		 * Return a random key from the keyspace.
+		 *
+		 * @return
+		 */
+		Mono<ByteBuffer> randomKey();
+
+		/**
 		 * Find all keys matching the given {@code pattern}.
 		 *
 		 * @param patterns must not be {@literal null}.

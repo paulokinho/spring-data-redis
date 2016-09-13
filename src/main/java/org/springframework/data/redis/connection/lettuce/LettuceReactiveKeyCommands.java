@@ -29,6 +29,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.Numeric
 import org.springframework.util.Assert;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * @author Christoph Strobl
@@ -131,5 +132,16 @@ public class LettuceReactiveKeyCommands implements ReactiveRedisConnection.React
 						.map(value -> new MultiValueResponse<>(pattern, value));
 			});
 		});
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.redis.connection.ReactiveRedisConnection.ReactiveKeyCommands#randomKey()
+	 */
+	@Override
+	public Mono<ByteBuffer> randomKey() {
+		return connection.execute(cmd -> {
+			return LettuceReactiveRedisConnection.<ByteBuffer> monoConverter().convert(cmd.randomkey().map(ByteBuffer::wrap));
+		}).next();
 	}
 }

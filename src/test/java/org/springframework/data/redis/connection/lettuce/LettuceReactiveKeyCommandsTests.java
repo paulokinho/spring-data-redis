@@ -15,8 +15,8 @@
  */
 package org.springframework.data.redis.connection.lettuce;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.collection.IsCollectionWithSize.*;
-import static org.hamcrest.core.Is.*;
 import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
@@ -85,6 +85,27 @@ public class LettuceReactiveKeyCommandsTests extends LettuceReactiveCommandsTest
 
 		assertThat(connection.keyCommands().keys(ByteBuffer.wrap("*".getBytes())).block(), hasSize(6));
 		assertThat(connection.keyCommands().keys(ByteBuffer.wrap("key*".getBytes())).block(), hasSize(3));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void randomKeyShouldReturnAnyKey() {
+
+		nativeCommands.set(KEY_1, VALUE_2);
+		nativeCommands.set(KEY_2, VALUE_2);
+		nativeCommands.set(KEY_3, VALUE_3);
+
+		assertThat(connection.keyCommands().randomKey().block(), is(notNullValue()));
+	}
+
+	/**
+	 * @see DATAREDIS-525
+	 */
+	@Test
+	public void randomKeyShouldReturnNullWhenNoKeyExists() {
+		assertThat(connection.keyCommands().randomKey().block(), is(nullValue()));
 	}
 
 	/**
