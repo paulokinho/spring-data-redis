@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.data.redis.connection.jedis;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -62,6 +61,7 @@ import redis.clients.jedis.JedisPoolConfig;
  * @author Thomas Darimont
  * @author Christoph Strobl
  * @author David Liu
+ * @author Mark Paluch
  */
 @RunWith(RelaxedJUnit4ClassRunner.class)
 @ContextConfiguration
@@ -343,11 +343,8 @@ public class JedisConnectionIntegrationTests extends AbstractConnectionIntegrati
 		factory2.destroy();
 	}
 
-	/**
-	 * @see DATAREDIS-285
-	 */
 	@SuppressWarnings("unchecked")
-	@Test
+	@Test // DATAREDIS-285
 	public void testExecuteShouldConvertArrayReplyCorrectly() {
 		connection.set("spring", "awesome");
 		connection.set("data", "cool");
@@ -359,10 +356,7 @@ public class JedisConnectionIntegrationTests extends AbstractConnectionIntegrati
 						"cool".getBytes(), "supercalifragilisticexpialidocious".getBytes())));
 	}
 
-	/**
-	 * @see DATAREDIS-286
-	 */
-	@Test
+	@Test // DATAREDIS-286, DATAREDIS-564
 	public void expireShouldSupportExiprationForValuesLargerThanInteger() {
 
 		connection.set("expireKey", "foo");
@@ -374,10 +368,7 @@ public class JedisConnectionIntegrationTests extends AbstractConnectionIntegrati
 		assertThat(ttl, is(seconds));
 	}
 
-	/**
-	 * @see DATAREDIS-286
-	 */
-	@Test
+	@Test // DATAREDIS-286
 	public void pExpireShouldSupportExiprationForValuesLargerThanInteger() {
 
 		connection.set("pexpireKey", "foo");
@@ -390,10 +381,7 @@ public class JedisConnectionIntegrationTests extends AbstractConnectionIntegrati
 				millis, ttl, millis - ttl), millis - ttl < 20L);
 	}
 
-	/**
-	 * @see DATAREDIS-330
-	 */
-	@Test
+	@Test // DATAREDIS-330
 	@RequiresRedisSentinel(SentinelsAvailable.ONE_ACTIVE)
 	public void shouldReturnSentinelCommandsWhenWhenActiveSentinelFound() {
 
@@ -402,10 +390,12 @@ public class JedisConnectionIntegrationTests extends AbstractConnectionIntegrati
 		assertThat(connection.getSentinelConnection(), notNullValue());
 	}
 
-	/**
-	 * @see DATAREDIS-106
-	 */
-	@Test
+	@Test // DATAREDIS-552
+	public void shouldSetClientName() {
+		assertThat(connection.getClientName(), is(equalTo("jedis-client")));
+	}
+
+	@Test // DATAREDIS-106
 	public void zRangeByScoreTest() {
 
 		connection.zAdd("myzset", 1, "one");

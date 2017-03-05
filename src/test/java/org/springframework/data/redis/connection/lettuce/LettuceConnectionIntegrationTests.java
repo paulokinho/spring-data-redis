@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import org.springframework.data.redis.test.util.RequiresRedisSentinel;
 import org.springframework.test.annotation.IfProfileValue;
 import org.springframework.test.context.ContextConfiguration;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
+import com.lambdaworks.redis.api.async.RedisAsyncCommands;
 
 /**
  * Integration test of {@link LettuceConnection}
@@ -210,7 +210,7 @@ public class LettuceConnectionIntegrationTests extends AbstractConnectionIntegra
 		RedisConnection connection = factory2.getConnection();
 		// Use the connection to make sure the channel is initialized, else nothing happens on close
 		connection.ping();
-		((RedisAsyncConnection) connection.getNativeConnection()).close();
+		((RedisAsyncCommands) connection.getNativeConnection()).getStatefulConnection().close();
 		try {
 			connection.ping();
 			fail("Exception should be thrown trying to use a closed connection");
@@ -298,11 +298,8 @@ public class LettuceConnectionIntegrationTests extends AbstractConnectionIntegra
 		}
 	}
 
-	/**
-	 * @see DATAREDIS-285
-	 */
 	@SuppressWarnings("unchecked")
-	@Test
+	@Test // DATAREDIS-285
 	public void testExecuteShouldConvertArrayReplyCorrectly() {
 
 		connection.set("spring", "awesome");
@@ -329,10 +326,7 @@ public class LettuceConnectionIntegrationTests extends AbstractConnectionIntegra
 				Arrays.asList(new Object[] { new String(scriptResults.get(0)), new String(scriptResults.get(1)) }));
 	}
 
-	/**
-	 * @see DATAREDIS-106
-	 */
-	@Test
+	@Test // DATAREDIS-106
 	public void zRangeByScoreTest() {
 
 		connection.zAdd("myzset", 1, "one");
@@ -344,15 +338,12 @@ public class LettuceConnectionIntegrationTests extends AbstractConnectionIntegra
 		assertEquals("two", new String(zRangeByScore.iterator().next()));
 	}
 
-	/**
-	 * @see DATAREDIS-348
-	 */
-	@Test
+	@Test // DATAREDIS-348
 	@RequiresRedisSentinel(RedisSentinelRule.SentinelsAvailable.ONE_ACTIVE)
 	public void shouldReturnSentinelCommandsWhenWhenActiveSentinelFound() {
 
-		((LettuceConnection) byteConnection).setSentinelConfiguration(new RedisSentinelConfiguration().master("mymaster")
-				.sentinel("127.0.0.1", 26379).sentinel("127.0.0.1", 26380));
+		((LettuceConnection) byteConnection).setSentinelConfiguration(
+				new RedisSentinelConfiguration().master("mymaster").sentinel("127.0.0.1", 26379).sentinel("127.0.0.1", 26380));
 		assertThat(connection.getSentinelConnection(), notNullValue());
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  */
 package org.springframework.data.redis.connection.lettuce;
 
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 import java.lang.reflect.InvocationTargetException;
@@ -30,8 +31,10 @@ import org.springframework.data.redis.connection.RedisServerCommands.ShutdownOpt
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionUnitTestSuite.LettuceConnectionUnitTests;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionUnitTestSuite.LettucePipelineConnectionUnitTests;
 
-import com.lambdaworks.redis.RedisAsyncConnectionImpl;
 import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.api.StatefulRedisConnection;
+import com.lambdaworks.redis.api.async.RedisAsyncCommands;
+import com.lambdaworks.redis.api.sync.RedisCommands;
 import com.lambdaworks.redis.codec.RedisCodec;
 
 /**
@@ -43,117 +46,97 @@ import com.lambdaworks.redis.codec.RedisCodec;
 public class LettuceConnectionUnitTestSuite {
 
 	@SuppressWarnings("rawtypes")
-	public static class LettuceConnectionUnitTests extends AbstractConnectionUnitTestBase<RedisAsyncConnectionImpl> {
+	public static class LettuceConnectionUnitTests extends AbstractConnectionUnitTestBase<RedisAsyncCommands> {
 
 		protected LettuceConnection connection;
 		private RedisClient clientMock;
+		protected StatefulRedisConnection<byte[], byte[]> statefulConnectionMock;
+		protected RedisAsyncCommands<byte[], byte[]> asyncCommandsMock;
+		protected RedisCommands syncCommandsMock;
 
 		@SuppressWarnings({ "unchecked" })
 		@Before
 		public void setUp() throws InvocationTargetException, IllegalAccessException {
 
 			clientMock = mock(RedisClient.class);
-			when(clientMock.connectAsync((RedisCodec) any())).thenReturn(getNativeRedisConnectionMock());
+			statefulConnectionMock = mock(StatefulRedisConnection.class);
+			when(clientMock.connect((RedisCodec) any())).thenReturn(statefulConnectionMock);
+
+			asyncCommandsMock = getNativeRedisConnectionMock();
+			syncCommandsMock = mock(RedisCommands.class);
+
+			when(statefulConnectionMock.async()).thenReturn(getNativeRedisConnectionMock());
+			when(statefulConnectionMock.sync()).thenReturn(syncCommandsMock);
 			connection = new LettuceConnection(0, clientMock);
 		}
 
-		/**
-		 * @see DATAREDIS-184
-		 */
-		@Test
-		public void shutdownWithNullOpionsIsCalledCorrectly() {
+		@Test // DATAREDIS-184
+		public void shutdownWithNullOptionsIsCalledCorrectly() {
 
 			connection.shutdown(null);
-			verifyNativeConnectionInvocation().shutdown(true);
+			verify(syncCommandsMock, times(1)).shutdown(true);
 		}
 
-		/**
-		 * @see DATAREDIS-184
-		 */
-		@Test
+		@Test // DATAREDIS-184
 		public void shutdownWithNosaveOptionIsCalledCorrectly() {
 
 			connection.shutdown(ShutdownOption.NOSAVE);
-			verifyNativeConnectionInvocation().shutdown(false);
+			verify(syncCommandsMock, times(1)).shutdown(false);
 		}
 
-		/**
-		 * @see DATAREDIS-184
-		 */
-		@Test
+		@Test // DATAREDIS-184
 		public void shutdownWithSaveOptionIsCalledCorrectly() {
 
 			connection.shutdown(ShutdownOption.SAVE);
-			verifyNativeConnectionInvocation().shutdown(true);
+			verify(syncCommandsMock, times(1)).shutdown(true);
 		}
 
-		/**
-		 * @see DATAREDIS-267
-		 */
-		@Test
+		@Test // DATAREDIS-267
 		public void killClientShouldDelegateCallCorrectly() {
 
 			String ipPort = "127.0.0.1:1001";
 			connection.killClient("127.0.0.1", 1001);
-			verifyNativeConnectionInvocation().clientKill(eq(ipPort));
+			verify(syncCommandsMock, times(1)).clientKill(eq(ipPort));
 		}
 
-		/**
-		 * @see DATAREDIS-270
-		 */
-		@Test
+		@Test // DATAREDIS-270
 		public void getClientNameShouldSendRequestCorrectly() {
 
 			connection.getClientName();
-			verifyNativeConnectionInvocation().clientGetname();
+			verify(syncCommandsMock, times(1)).clientGetname();
 		}
 
-		/**
-		 * @see DATAREDIS-277
-		 */
-		@Test(expected = IllegalArgumentException.class)
+		@Test(expected = IllegalArgumentException.class) // DATAREDIS-277
 		public void slaveOfShouldThrowExectpionWhenCalledForNullHost() {
 			connection.slaveOf(null, 0);
 		}
 
-		/**
-		 * @see DATAREDIS-277
-		 */
-		@Test
+		@Test // DATAREDIS-277
 		public void slaveOfShouldBeSentCorrectly() {
 
 			connection.slaveOf("127.0.0.1", 1001);
-			verifyNativeConnectionInvocation().slaveof(eq("127.0.0.1"), eq(1001));
+			verify(syncCommandsMock, times(1)).slaveof(eq("127.0.0.1"), eq(1001));
 		}
 
-		/**
-		 * @see DATAREDIS-277
-		 */
-		@Test
+		@Test // DATAREDIS-277
 		public void slaveOfNoOneShouldBeSentCorrectly() {
 
 			connection.slaveOfNoOne();
-			verifyNativeConnectionInvocation().slaveofNoOne();
+			verify(syncCommandsMock, times(1)).slaveofNoOne();
 		}
 
-		/**
-		 * @see DATAREDIS-348
-		 */
-		@Test(expected = InvalidDataAccessResourceUsageException.class)
+		@Test(expected = InvalidDataAccessResourceUsageException.class) // DATAREDIS-348
 		public void shouldThrowExceptionWhenAccessingRedisSentinelsCommandsWhenNoSentinelsConfigured() {
 			connection.getSentinelConnection();
 		}
 
-		/**
-		 * @see DATAREDIS-431
-		 */
-		@Test
-		public void dbIndexShouldBeSetWhenOptainingConnection() {
+		@Test // DATAREDIS-431
+		public void dbIndexShouldBeSetWhenObtainingConnection() {
 
 			connection = new LettuceConnection(null, 0, clientMock, null, 1);
 			connection.getNativeConnection();
 
-			verify(getNativeRedisConnectionMock(), times(1)).select(1);
+			verify(syncCommandsMock, times(1)).select(1);
 		}
 	}
 
@@ -165,6 +148,55 @@ public class LettuceConnectionUnitTestSuite {
 			super.setUp();
 			this.connection.openPipeline();
 		}
-	}
 
+		@Test // DATAREDIS-528
+		public void shutdownWithSaveOptionIsCalledCorrectly() {
+
+			connection.shutdown(ShutdownOption.SAVE);
+			verify(asyncCommandsMock, times(1)).shutdown(true);
+		}
+
+		@Test // DATAREDIS-528
+		public void shutdownWithNosaveOptionIsCalledCorrectly() {
+
+			connection.shutdown(ShutdownOption.NOSAVE);
+			verify(asyncCommandsMock, times(1)).shutdown(false);
+		}
+
+		@Test // DATAREDIS-528
+		public void slaveOfShouldBeSentCorrectly() {
+
+			connection.slaveOf("127.0.0.1", 1001);
+			verify(asyncCommandsMock, times(1)).slaveof(eq("127.0.0.1"), eq(1001));
+		}
+
+		@Test // DATAREDIS-528
+		public void shutdownWithNullOptionsIsCalledCorrectly() {
+
+			connection.shutdown(null);
+			verify(asyncCommandsMock, times(1)).shutdown(true);
+		}
+
+		@Test // DATAREDIS-528
+		public void killClientShouldDelegateCallCorrectly() {
+
+			String ipPort = "127.0.0.1:1001";
+			connection.killClient("127.0.0.1", 1001);
+			verify(asyncCommandsMock, times(1)).clientKill(eq(ipPort));
+		}
+
+		@Test // DATAREDIS-528
+		public void slaveOfNoOneShouldBeSentCorrectly() {
+
+			connection.slaveOfNoOne();
+			verify(asyncCommandsMock, times(1)).slaveofNoOne();
+		}
+
+		@Test // DATAREDIS-528
+		public void getClientNameShouldSendRequestCorrectly() {
+
+			connection.getClientName();
+			verify(asyncCommandsMock, times(1)).clientGetname();
+		}
+	}
 }

@@ -6,6 +6,104 @@ Commit changelog: http://github.com/spring-projects/spring-data-redis/tree/v[ver
 Issues changelog: http://jira.springsource.org/secure/ReleaseNote.jspa?projectId=10604
 ===========================
 
+Changes in version 1.8.1.RELEASE (2017-03-02)
+---------------------------------------------
+* DATAREDIS-599 - Remove references to single-argument assertion methods of Spring.
+* DATAREDIS-598 - Release 1.8.1 (Ingalls SR1).
+
+
+Changes in version 1.7.7.RELEASE (2017-01-26)
+---------------------------------------------
+* DATAREDIS-593 - Enums with a customized toString method cannot be deserialized from byte[].
+* DATAREDIS-586 - Release 1.7.7 (Hopper SR7).
+* DATAREDIS-564 - Invoking JedisConnection.expire during transaction/pipelining can cause NPE.
+
+
+Changes in version 1.8.0.RELEASE (2017-01-26)
+---------------------------------------------
+* DATAREDIS-594 - Update "what’s new" section in reference documentation.
+* DATAREDIS-593 - Enums with a customized toString method cannot be deserialized from byte[].
+* DATAREDIS-592 - RedisCache.get(Object, Callable) does not set the TTL on the element.
+* DATAREDIS-591 - Update project documentation with the CLA tool integration.
+* DATAREDIS-589 - Publishing RedisKeyExpiredEvent from other than Repository support causes NullPointerException in RedisKeyValueAdapter.
+* DATAREDIS-587 - Release 1.8 GA (Ingalls).
+* DATAREDIS-564 - Invoking JedisConnection.expire during transaction/pipelining can cause NPE.
+* DATAREDIS-563 - Migrate Jira ticket reference format in tests.
+* DATAREDIS-532 - Convert all see http:// links to valid @see links.
+
+
+Changes in version 1.7.6.RELEASE (2016-12-21)
+---------------------------------------------
+* DATAREDIS-566 - Release 1.7.6 (Hopper SR6).
+
+
+Changes in version 1.8.0.RC1 (2016-12-21)
+-----------------------------------------
+* DATAREDIS-584 - Upgrade to a newer JDK version on TravisCI.
+* DATAREDIS-583 - Adapt API in RepositoryFactoryBeanSupport implementation.
+* DATAREDIS-579 - Register repository factory in spring.factories for multi-store support.
+* DATAREDIS-558 - spring-data-redis - Cannot install in OSGi due import range of slf4j is locked down to 1.7.12 version.
+* DATAREDIS-553 - Support caching null values via RedisCache.
+* DATAREDIS-552 - Set client name on Jedis connection factory.
+* DATAREDIS-551 - NPE when counting keys while invoking findBy(Pageable).
+* DATAREDIS-548 - Connection should be released when used with read-only transactions.
+* DATAREDIS-547 - Getting NPE when writing valid Query Method without any criteria.
+* DATAREDIS-542 - RedisCache.putIfAbsent does not set the TTL on the element.
+* DATAREDIS-541 - Release 1.8 RC1 (Ingalls).
+* DATAREDIS-539 - replace call to deprecated addCache.
+* DATAREDIS-533 - Add support for geoindex query methods.
+* DATAREDIS-531 - ScanCursor holds reference to closed/released Jedis connection.
+* DATAREDIS-528 - Upgrade to Lettuce 4.2.
+
+
+Changes in version 2.0.0.M1 (2016-11-23)
+----------------------------------------
+* DATAREDIS-569 - Set up 2.0 development.
+* DATAREDIS-568 - Release 2.0 M1 (Kay).
+* DATAREDIS-567 - Remove Support for SRP and JRedis.
+* DATAREDIS-525 - Add support for reactive RedisConnection and RedisOperations.
+
+
+Changes in version 1.7.5.RELEASE (2016-11-03)
+---------------------------------------------
+* DATAREDIS-558 - spring-data-redis - Cannot install in OSGi due import range of slf4j is locked down to 1.7.12 version.
+* DATAREDIS-557 - Release 1.7.5 (Hopper SR5).
+* DATAREDIS-542 - RedisCache.putIfAbsent does not set the TTL on the element.
+
+
+Changes in version 1.7.4.RELEASE (2016-09-29)
+---------------------------------------------
+* DATAREDIS-555 - Release 1.7.4 (Hopper SR4).
+
+
+Changes in version 1.6.6.RELEASE (2016-09-29)
+---------------------------------------------
+* DATAREDIS-556 - Release 1.6.6 (Gosling SR6).
+
+
+Changes in version 1.6.5.RELEASE (2016-09-20)
+---------------------------------------------
+* DATAREDIS-554 - Release 1.6.5 (Gosling SR5).
+* DATAREDIS-548 - Connection should be released when used with read-only transactions.
+* DATAREDIS-513 - Pipelining doesn't supports time operation.
+* DATAREDIS-500 - executePipelined with RedisCallback uses wrong serializer (RedisTemplate.java).
+* DATAREDIS-469 - RedisAtomicLong throws a null pointer if key is removed.
+
+
+Changes in version 1.7.3.RELEASE (2016-09-20)
+---------------------------------------------
+* DATAREDIS-551 - NPE when counting keys while invoking findBy(Pageable).
+* DATAREDIS-548 - Connection should be released when used with read-only transactions.
+* DATAREDIS-547 - Getting NPE when writing valid Query Method without any criteria.
+* DATAREDIS-540 - Assert compatibility with Spring 5.
+* DATAREDIS-537 - Add support for Redis Cluster and SSL.
+* DATAREDIS-524 - NOAUTH Authentication required when connecting to Redis Sentinel with LettuceConnectionFactory.
+* DATAREDIS-522 - Release 1.7.3 (Hopper SR3).
+* DATAREDIS-505 - Allow configuration of Redis Keyspace events config value.
+* DATAREDIS-502 - App fails to start on AWS due to spring-data-redis use of unsupported CONFIG command.
+* DATAREDIS-500 - executePipelined with RedisCallback uses wrong serializer (RedisTemplate.java).
+
+
 Changes in version 1.8.0.M1 (2016-07-27)
 ----------------------------------------
 * DATAREDIS-540 - Assert compatibility with Spring 5.

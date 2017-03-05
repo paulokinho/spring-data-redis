@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,18 @@ package org.springframework.data.redis.core;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -39,11 +44,12 @@ import org.springframework.data.annotation.Reference;
 import org.springframework.data.geo.Point;
 import org.springframework.data.keyvalue.annotation.KeySpace;
 import org.springframework.data.redis.ConnectionFactoryTracker;
+import org.springframework.data.redis.RedisTestProfileValueSource;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.core.convert.Bucket;
+import org.springframework.data.redis.core.RedisKeyValueAdapter.EnableKeyspaceEvents;
 import org.springframework.data.redis.core.convert.KeyspaceConfiguration;
 import org.springframework.data.redis.core.convert.MappingConfiguration;
 import org.springframework.data.redis.core.index.GeoIndexed;
@@ -58,15 +64,18 @@ import org.springframework.data.redis.core.mapping.RedisMappingContext;
 @RunWith(Parameterized.class)
 public class RedisKeyValueAdapterTests {
 
+	private static Set<RedisConnectionFactory> initializedFactories = new HashSet<RedisConnectionFactory>();
+
 	RedisKeyValueAdapter adapter;
 	StringRedisTemplate template;
 	RedisConnectionFactory connectionFactory;
 
 	public RedisKeyValueAdapterTests(RedisConnectionFactory connectionFactory) throws Exception {
 
-		if (connectionFactory instanceof InitializingBean) {
+		if (connectionFactory instanceof InitializingBean && initializedFactories.add(connectionFactory)) {
 			((InitializingBean) connectionFactory).afterPropertiesSet();
 		}
+
 		this.connectionFactory = connectionFactory;
 		ConnectionFactoryTracker.add(connectionFactory);
 	}
@@ -78,6 +87,7 @@ public class RedisKeyValueAdapterTests {
 
 	@AfterClass
 	public static void cleanUp() {
+		initializedFactories.clear();
 		ConnectionFactoryTracker.cleanUp();
 	}
 
@@ -92,6 +102,7 @@ public class RedisKeyValueAdapterTests {
 		mappingContext.afterPropertiesSet();
 
 		adapter = new RedisKeyValueAdapter(template, mappingContext);
+		adapter.setEnableKeyspaceEvents(EnableKeyspaceEvents.ON_STARTUP);
 		adapter.afterPropertiesSet();
 
 		template.execute(new RedisCallback<Void>() {
@@ -114,10 +125,7 @@ public class RedisKeyValueAdapterTests {
 		}
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
+	@Test // DATAREDIS-425
 	public void putWritesDataCorrectly() {
 
 		Person rand = new Person();
@@ -131,10 +139,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForHash().entries("persons:1").size(), is(2));
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
+	@Test // DATAREDIS-425
 	public void putWritesSimpleIndexDataCorrectly() {
 
 		Person rand = new Person();
@@ -146,10 +151,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForSet().members("persons:firstname:rand"), hasItems("1"));
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
+	@Test // DATAREDIS-425
 	public void putWritesNestedDataCorrectly() {
 
 		Person rand = new Person();
@@ -162,10 +164,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForHash().entries("persons:1").size(), is(2));
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
+	@Test // DATAREDIS-425
 	public void putWritesSimpleNestedIndexValuesCorrectly() {
 
 		Person rand = new Person();
@@ -178,10 +177,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForSet().members("persons:address.country:Andor"), hasItems("1"));
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
+	@Test // DATAREDIS-425
 	public void getShouldReadSimpleObjectCorrectly() {
 
 		Map<String, String> map = new LinkedHashMap<String, String>();
@@ -195,10 +191,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(((Person) loaded).age, is(24));
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
+	@Test // DATAREDIS-425
 	public void getShouldReadNestedObjectCorrectly() {
 
 		Map<String, String> map = new LinkedHashMap<String, String>();
@@ -212,10 +205,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(((Person) loaded).address.country, is("Andor"));
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
+	@Test // DATAREDIS-425
 	public void couldReadsKeyspaceSizeCorrectly() {
 
 		Map<String, String> map = new LinkedHashMap<String, String>();
@@ -228,10 +218,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(adapter.count("persons"), is(3L));
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
+	@Test // DATAREDIS-425
 	public void deleteRemovesEntriesCorrectly() {
 
 		Map<String, String> map = new LinkedHashMap<String, String>();
@@ -246,10 +233,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.hasKey("persons:1"), is(false));
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
+	@Test // DATAREDIS-425
 	public void deleteCleansIndexedDataCorrectly() {
 
 		Map<String, String> map = new LinkedHashMap<String, String>();
@@ -266,32 +250,62 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForSet().members("persons:firstname:rand"), not(hasItem("1")));
 	}
 
-	/**
-	 * @see DATAREDIS-425
-	 */
-	@Test
-	public void keyExpiredEventShouldRemoveHelperStructures() {
+	@Test // DATAREDIS-425
+	public void keyExpiredEventShouldRemoveHelperStructures() throws Exception {
+
+		assumeTrue(RedisTestProfileValueSource.matches("runLongTests", "true"));
 
 		Map<String, String> map = new LinkedHashMap<String, String>();
 		map.put("_class", Person.class.getName());
 		map.put("firstname", "rand");
 		map.put("address.country", "Andor");
 
+		template.opsForHash().putAll("persons:1", map);
+
 		template.opsForSet().add("persons", "1");
 		template.opsForSet().add("persons:firstname:rand", "1");
 		template.opsForSet().add("persons:1:idx", "persons:firstname:rand");
 
-		adapter.onApplicationEvent(new RedisKeyExpiredEvent("persons:1".getBytes(Bucket.CHARSET)));
+		template.expire("persons:1", 100, TimeUnit.MILLISECONDS);
 
+		waitUntilKeyIsGone(template, "persons:1");
+		waitUntilKeyIsGone(template, "persons:1:phantom");
+		waitUntilKeyIsGone(template, "persons:firstname:rand");
+
+		assertThat(template.hasKey("persons:1"), is(false));
 		assertThat(template.hasKey("persons:firstname:rand"), is(false));
 		assertThat(template.hasKey("persons:1:idx"), is(false));
 		assertThat(template.opsForSet().members("persons"), not(hasItem("1")));
 	}
 
-	/**
-	 * @see DATAREDIS-512
-	 */
-	@Test
+	@Test // DATAREDIS-589
+	public void keyExpiredEventWithoutKeyspaceShouldBeIgnored() throws Exception {
+
+		assumeTrue(RedisTestProfileValueSource.matches("runLongTests", "true"));
+
+		Map<String, String> map = new LinkedHashMap<String, String>();
+		map.put("_class", Person.class.getName());
+		map.put("firstname", "rand");
+		map.put("address.country", "Andor");
+
+		template.opsForHash().putAll("persons:1", map);
+		template.opsForHash().putAll("1", map);
+
+		template.opsForSet().add("persons", "1");
+		template.opsForSet().add("persons:firstname:rand", "1");
+		template.opsForSet().add("persons:1:idx", "persons:firstname:rand");
+
+		template.expire("1", 100, TimeUnit.MILLISECONDS);
+
+		waitUntilKeyIsGone(template, "1");
+
+		assertThat(template.hasKey("persons:1"), is(true));
+		assertThat(template.hasKey("persons:firstname:rand"), is(true));
+		assertThat(template.hasKey("persons:1:idx"), is(true));
+		assertThat(template.opsForSet().members("persons"), hasItem("1"));
+	}
+
+	@Test // DATAREDIS-512
 	public void putWritesIndexDataCorrectly() {
 
 		Person rand = new Person();
@@ -327,10 +341,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForSet().isMember("persons:mat:idx", "persons:firstname:mat"), is(true));
 	}
 
-	/**
-	 * @see DATAREDIS-471
-	 */
-	@Test
+	@Test // DATAREDIS-471
 	public void updateShouldAlterIndexDataCorrectly() {
 
 		Person rand = new Person();
@@ -349,10 +360,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.hasKey("persons:firstname:mat"), is(true));
 	}
 
-	/**
-	 * @see DATAREDIS-471
-	 */
-	@Test
+	@Test // DATAREDIS-471
 	public void updateShouldAlterIndexDataOnNestedObjectCorrectly() {
 
 		Person rand = new Person();
@@ -375,10 +383,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.hasKey("persons:address.country:tear"), is(true));
 	}
 
-	/**
-	 * @see DATAREDIS-471
-	 */
-	@Test
+	@Test // DATAREDIS-471
 	public void updateShouldAlterIndexDataOnNestedObjectPathCorrectly() {
 
 		Person rand = new Person();
@@ -398,10 +403,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.hasKey("persons:address.country:tear"), is(true));
 	}
 
-	/**
-	 * @see DATAREDIS-471
-	 */
-	@Test
+	@Test // DATAREDIS-471
 	public void updateShouldRemoveComplexObjectCorrectly() {
 
 		Person rand = new Person();
@@ -421,10 +423,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForSet().isMember("persons:address.country:andor", "1"), is(false));
 	}
 
-	/**
-	 * @see DATAREDIS-471
-	 */
-	@Test
+	@Test // DATAREDIS-471
 	public void updateShouldRemoveSimpleListValuesCorrectly() {
 
 		Person rand = new Person();
@@ -441,10 +440,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForHash().hasKey("persons:1", "nicknames.[1]"), is(false));
 	}
 
-	/**
-	 * @see DATAREDIS-471
-	 */
-	@Test
+	@Test // DATAREDIS-471
 	public void updateShouldRemoveComplexListValuesCorrectly() {
 
 		Person mat = new Person();
@@ -471,10 +467,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForHash().hasKey("persons:1", "coworkers.[1].nicknames.[0]"), is(false));
 	}
 
-	/**
-	 * @see DATAREDIS-471
-	 */
-	@Test
+	@Test // DATAREDIS-471
 	public void updateShouldRemoveSimpleMapValuesCorrectly() {
 
 		Person rand = new Person();
@@ -490,10 +483,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForHash().hasKey("persons:1", "physicalAttributes.[eye-color]"), is(false));
 	}
 
-	/**
-	 * @see DATAREDIS-471
-	 */
-	@Test
+	@Test // DATAREDIS-471
 	public void updateShouldRemoveComplexMapValuesCorrectly() {
 
 		Person tam = new Person();
@@ -512,10 +502,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForHash().hasKey("persons:1", "relatives.[stepfather].firstname"), is(false));
 	}
 
-	/**
-	 * @see DATAREDIS-533
-	 */
-	@Test
+	@Test // DATAREDIS-533
 	public void putShouldCreateGeoIndexCorrectly() {
 
 		Person tam = new Person();
@@ -529,10 +516,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForZSet().score("persons:address:location", "1"), is(notNullValue()));
 	}
 
-	/**
-	 * @see DATAREDIS-533
-	 */
-	@Test
+	@Test // DATAREDIS-533
 	public void deleteShouldRemoveGeoIndexCorrectly() {
 
 		Person tam = new Person();
@@ -548,10 +532,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForZSet().score("persons:address:location", "1"), is(nullValue()));
 	}
 
-	/**
-	 * @see DATAREDIS-533
-	 */
-	@Test
+	@Test // DATAREDIS-533
 	public void updateShouldAlterGeoIndexCorrectlyOnDelete() {
 
 		Person tam = new Person();
@@ -570,10 +551,7 @@ public class RedisKeyValueAdapterTests {
 		assertThat(template.opsForZSet().score("persons:address:location", "1"), is(nullValue()));
 	}
 
-	/**
-	 * @see DATAREDIS-533
-	 */
-	@Test
+	@Test // DATAREDIS-533
 	public void updateShouldAlterGeoIndexCorrectlyOnUpdate() {
 
 		Person tam = new Person();
@@ -594,6 +572,47 @@ public class RedisKeyValueAdapterTests {
 
 		assertThat(updatedLocation.getX(), is(closeTo(17D, 0.005)));
 		assertThat(updatedLocation.getY(), is(closeTo(18D, 0.005)));
+	}
+
+	/**
+	 * Wait up to 5 seconds until {@code key} is no longer available in Redis.
+	 *
+	 * @param template must not be {@literal null}.
+	 * @param key must not be {@literal null}.
+	 * @throws TimeoutException
+	 * @throws InterruptedException
+	 */
+	private static void waitUntilKeyIsGone(RedisTemplate<String, ?> template, String key)
+			throws TimeoutException, InterruptedException {
+		waitUntilKeyIsGone(template, key, 5, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Wait up to {@code timeout} until {@code key} is no longer available in Redis.
+	 *
+	 * @param template must not be {@literal null}.
+	 * @param key must not be {@literal null}.
+	 * @param timeout
+	 * @param timeUnit must not be {@literal null}.
+	 * @throws InterruptedException
+	 * @throws TimeoutException
+	 */
+	private static void waitUntilKeyIsGone(RedisTemplate<String, ?> template, String key, long timeout, TimeUnit timeUnit)
+			throws InterruptedException, TimeoutException {
+
+		long limitMs = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+		long sleepMs = 100;
+		long waitedMs = 0;
+
+		while (template.hasKey(key)) {
+
+			if (waitedMs > limitMs) {
+				throw new TimeoutException(String.format("Key '%s' after %d %s still present", key, timeout, timeUnit));
+			}
+
+			Thread.sleep(sleepMs);
+			waitedMs += sleepMs;
+		}
 	}
 
 	@KeySpace("persons")

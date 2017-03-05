@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.springframework.data.redis.connection.jedis;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+
+import redis.clients.jedis.Jedis;
 
 import java.util.Collection;
 import java.util.List;
@@ -36,10 +38,12 @@ import org.springframework.data.redis.connection.ReturnType;
 import org.springframework.data.redis.test.util.MinimumRedisVersionRule;
 import org.springframework.data.redis.test.util.RedisSentinelRule;
 import org.springframework.test.annotation.IfProfileValue;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * @author Christoph Strobl
  * @author Thomas Darimont
+ * @author Mark Paluch
  */
 public class JedisSentinelIntegrationTests extends AbstractConnectionIntegrationTests {
 
@@ -59,6 +63,7 @@ public class JedisSentinelIntegrationTests extends AbstractConnectionIntegration
 	@Before
 	public void setUp() {
 		JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(SENTINEL_CONFIG);
+		jedisConnectionFactory.setClientName("jedis-client");
 		jedisConnectionFactory.afterPropertiesSet();
 		connectionFactory = jedisConnectionFactory;
 		super.setUp();
@@ -122,10 +127,7 @@ public class JedisSentinelIntegrationTests extends AbstractConnectionIntegration
 		super.testErrorInTx();
 	}
 
-	/**
-	 * @see DATAREDIS-330
-	 */
-	@Test
+	@Test // DATAREDIS-330
 	public void shouldReadMastersCorrectly() {
 
 		List<RedisServer> servers = (List<RedisServer>) connectionFactory.getSentinelConnection().masters();
@@ -133,10 +135,7 @@ public class JedisSentinelIntegrationTests extends AbstractConnectionIntegration
 		assertThat(servers.get(0).getName(), is(MASTER_NAME));
 	}
 
-	/**
-	 * @see DATAREDIS-330
-	 */
-	@Test
+	@Test // DATAREDIS-330
 	public void shouldReadSlavesOfMastersCorrectly() {
 
 		RedisSentinelConnection sentinelConnection = connectionFactory.getSentinelConnection();
@@ -147,6 +146,15 @@ public class JedisSentinelIntegrationTests extends AbstractConnectionIntegration
 		Collection<RedisServer> slaves = sentinelConnection.slaves(servers.get(0));
 		assertThat(slaves.size(), is(2));
 		assertThat(slaves, hasItems(SLAVE_0, SLAVE_1));
+	}
+
+	@Test // DATAREDIS-552
+	public void shouldSetClientName() {
+
+		RedisSentinelConnection sentinelConnection = connectionFactory.getSentinelConnection();
+		Jedis jedis = (Jedis) ReflectionTestUtils.getField(sentinelConnection, "jedis");
+
+		assertThat(jedis.clientGetname(), is(equalTo("jedis-client")));
 	}
 
 }

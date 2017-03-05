@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,10 +77,7 @@ public class LettuceSentinelIntegrationTests extends AbstractConnectionIntegrati
 		((LettuceConnectionFactory) connectionFactory).destroy();
 	}
 
-	/**
-	 * @see DATAREDIS-348
-	 */
-	@Test
+	@Test // DATAREDIS-348
 	public void shouldReadMastersCorrectly() {
 
 		List<RedisServer> servers = (List<RedisServer>) connectionFactory.getSentinelConnection().masters();
@@ -88,10 +85,7 @@ public class LettuceSentinelIntegrationTests extends AbstractConnectionIntegrati
 		assertThat(servers.get(0).getName(), is(MASTER_NAME));
 	}
 
-	/**
-	 * @see DATAREDIS-348
-	 */
-	@Test
+	@Test // DATAREDIS-348
 	public void shouldReadSlavesOfMastersCorrectly() {
 
 		RedisSentinelConnection sentinelConnection = connectionFactory.getSentinelConnection();
@@ -104,10 +98,7 @@ public class LettuceSentinelIntegrationTests extends AbstractConnectionIntegrati
 		assertThat(slaves, hasItems(SLAVE_0, SLAVE_1));
 	}
 
-	/**
-	 * @see DATAREDIS-462
-	 */
-	@Test
+	@Test // DATAREDIS-462
 	public void factoryWorksWithoutClientResources() {
 
 		LettuceConnectionFactory factory = new LettuceConnectionFactory(SENTINEL_CONFIG);
@@ -123,25 +114,5 @@ public class LettuceSentinelIntegrationTests extends AbstractConnectionIntegrati
 		} finally {
 			connection.close();
 		}
-	}
-
-	/**
-	 * @see DATAREDIS-438
-	 */
-	@Test
-	@Override
-	@Ignore("see mp911de/lettuce#241")
-	public void geoHash() {
-		super.geoHash();
-	}
-
-	/**
-	 * @see DATAREDIS-438
-	 */
-	@Test
-	@Override
-	@Ignore("see mp911de/lettuce#241")
-	public void geoHashNonExisting() {
-		super.geoHashNonExisting();
 	}
 }

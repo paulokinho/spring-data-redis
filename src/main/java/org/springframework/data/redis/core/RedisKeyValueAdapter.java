@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ import org.springframework.data.redis.util.ByteUtils;
 import org.springframework.data.util.CloseableIterator;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Redis specific {@link KeyValueAdapter} implementation. Uses binary codec to read/write data from/to Redis. Objects
@@ -101,8 +102,6 @@ import org.springframework.util.ObjectUtils;
  */
 public class RedisKeyValueAdapter extends AbstractKeyValueAdapter
 		implements InitializingBean, ApplicationContextAware, ApplicationListener<RedisKeyspaceEvent> {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(RedisKeyValueAdapter.class);
 
 	private RedisOperations<?, ?> redisOps;
 	private RedisConverter converter;
@@ -163,7 +162,7 @@ public class RedisKeyValueAdapter extends AbstractKeyValueAdapter
 	 * Creates new {@link RedisKeyValueAdapter} with specific {@link RedisConverter}.
 	 *
 	 * @param redisOps must not be {@literal null}.
-	 * @param mappingContext must not be {@literal null}.
+	 * @param redisConverter must not be {@literal null}.
 	 */
 	public RedisKeyValueAdapter(RedisOperations<?, ?> redisOps, RedisConverter redisConverter) {
 
@@ -366,7 +365,6 @@ public class RedisKeyValueAdapter extends AbstractKeyValueAdapter
 		List<Object> result = new ArrayList<Object>();
 
 		List<byte[]> keys = new ArrayList<byte[]>(ids);
-
 
 		if (keys.isEmpty() || keys.size() < offset) {
 			return Collections.emptyList();
@@ -701,28 +699,7 @@ public class RedisKeyValueAdapter extends AbstractKeyValueAdapter
 	 */
 	@Override
 	public void onApplicationEvent(RedisKeyspaceEvent event) {
-
-		LOGGER.debug("Received %s .", event);
-
-		if (event instanceof RedisKeyExpiredEvent) {
-
-			final RedisKeyExpiredEvent expiredEvent = (RedisKeyExpiredEvent) event;
-
-			redisOps.execute(new RedisCallback<Void>() {
-
-				@Override
-				public Void doInRedis(RedisConnection connection) throws DataAccessException {
-
-					LOGGER.debug("Cleaning up expired key '%s' data structures in keyspace '%s'.", expiredEvent.getSource(),
-							expiredEvent.getKeyspace());
-
-					connection.sRem(toBytes(expiredEvent.getKeyspace()), expiredEvent.getId());
-					new IndexWriter(connection, converter).removeKeyFromIndexes(expiredEvent.getKeyspace(), expiredEvent.getId());
-					return null;
-				}
-			});
-
-		}
+		// just a customization hook
 	}
 
 	/*
@@ -814,12 +791,29 @@ public class RedisKeyValueAdapter extends AbstractKeyValueAdapter
 					if (!org.springframework.util.CollectionUtils.isEmpty(hash)) {
 						connection.del(phantomKey);
 					}
+
 					return hash;
 				}
 			});
 
 			Object value = converter.read(Object.class, new RedisData(hash));
-			publishEvent(new RedisKeyExpiredEvent(key, value));
+
+			String channel = !ObjectUtils.isEmpty(message.getChannel())
+					? converter.getConversionService().convert(message.getChannel(), String.class) : null;
+
+			final RedisKeyExpiredEvent event = new RedisKeyExpiredEvent(channel, key, value);
+
+			ops.execute(new RedisCallback<Void>() {
+				@Override
+				public Void doInRedis(RedisConnection connection) throws DataAccessException {
+
+					connection.sRem(converter.getConversionService().convert(event.getKeyspace(), byte[].class), event.getId());
+					new IndexWriter(connection, converter).removeKeyFromIndexes(event.getKeyspace(), event.getId());
+					return null;
+				}
+			});
+
+			publishEvent(event);
 		}
 
 		private boolean isKeyExpirationMessage(Message message) {
